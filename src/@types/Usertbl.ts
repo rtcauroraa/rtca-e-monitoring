@@ -1,5 +1,6 @@
 import type { Personnel } from "./Personnel";
 import type { Role } from "./Role";
+import type { UserRole } from "./UserRole";
 
 
 export type Usertbl = {
@@ -12,7 +13,10 @@ export type Usertbl = {
   fullName?:string|null,
   personnelId?:number | null;
   personnel?: Personnel | null;
+
   isActive?:boolean | null
   roleId?:number|null;
   role?:Role
+  secondaryRoleIds?: number[]; 
+  userRoles?: UserRole[];
 };

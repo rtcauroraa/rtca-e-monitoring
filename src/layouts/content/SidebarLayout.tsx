@@ -36,26 +36,46 @@ export default function SidebarLayout({ collapsed }: SidebarLayoutProps) {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Fetch all sidebars (for SuperAdmin view)
-  const { data: allSidebars = [] } = useQuery({
-    queryKey: ["sidebars"],
-    queryFn: sidebarService.getAll,
-  });
+  // Fetch all sidebars (the definitive master list source)
+const { data: allSidebars = [] } = useQuery({
+  queryKey: ["sidebars"],
+  queryFn: sidebarService.getAll,
+});
 
-  // Helper to format a single Sidebar object into an AntD Menu item
-  const formatMenuItem = (item?: Sidebar) => ({
-    key: item?.path || item?.keyName || "",
-    icon: item?.keyName ? IconMapper[item.keyName] : <FileTextOutlined />,
-    label: item?.sidebarName,
-    onClick: () => item?.path && navigate(item.path),
-  });
+// Helper to format a single Sidebar object into an AntD Menu item
+const formatMenuItem = (item?: Sidebar) => ({
+  key: item?.path || item?.keyName || "",
+  icon: item?.keyName ? IconMapper[item.keyName] : <FileTextOutlined />,
+  label: item?.sidebarName,
+  onClick: () => item?.path && navigate(item.path),
+});
 
-  // Decide which data source to use
-  // If SuperAdmin: Map all sidebars from the Master List
-  // If Regular Role: Map only sidebars from the user's role mapping
-  const finalMenuItems = user?.role?.isSuperAdmin
-    ? allSidebars.map(formatMenuItem)
-    : (user?.role?.sidebarRoleMappings?.map((m) => formatMenuItem(m.sidebar)) || []);
+// 1. Determine if the user holds SuperAdmin status across ANY assigned role profile mapping
+const isSuperAdmin = 
+  user?.role?.isSuperAdmin || 
+  user?.userRoles?.some((ur) => ur.role?.isSuperAdmin);
+
+// 2. Build a Set of all valid paths or IDs this user has permission to view
+const allowedPaths = new Set();
+
+// Extract from Primary Role profile
+user?.role?.sidebarRoleMappings?.forEach((m) => {
+  if (m?.sidebar?.path) allowedPaths.add(m.sidebar.path);
+});
+
+// Extract from all Secondary Roles profiles smoothly
+user?.userRoles?.forEach((ur) => {
+  ur.role?.sidebarRoleMappings?.forEach((m) => {
+    if (m?.sidebar?.path) allowedPaths.add(m.sidebar.path);
+  });
+});
+
+// 3. Construct the final menu tree matching against the definitive allSidebars pool
+const finalMenuItems = isSuperAdmin
+  ? allSidebars.map(formatMenuItem)
+  : allSidebars
+      .filter((sidebar) => sidebar && allowedPaths.has(sidebar.path))
+      .map(formatMenuItem);
 
   return (
     <Sider

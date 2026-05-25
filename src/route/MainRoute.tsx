@@ -29,6 +29,7 @@ import ApproverPage from "../pages/approver/ApproverIndex";
 import ActivityAppealForm from "../pages/appeal/ActivityAppealForm";
 import SchoolingIndex from "../pages/schooling/SchoolingIndex";
 import RestrictedIndex from "../pages/restricted/RestrictedIndex";
+import MyDepartmentIndex  from "../pages/my-department/MyDepartmentIndex";
 
 // Import your pages... (omitted for brevity, keep your existing imports)
 
@@ -75,6 +76,7 @@ export default function MainRoute() {
           {isAllowed("/sidebar") && <Route path="/sidebar" element={<SidebarIndex />} />}
           {isAllowed("/schooling") && <Route path="/schooling" element={<SchoolingIndex />} />}
            {isAllowed("/restricted") && <Route path="/restricted" element={<RestrictedIndex />} />}
+            {isAllowed("/my-department") && <Route path="/my-department" element={<MyDepartmentIndex />} />}
 
           {/* Catch-all for unauthorized paths inside the layout */}
           <Route path="*" element={<Navigate to="/" replace />} />

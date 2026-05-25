@@ -26,4 +26,5 @@ export type Personnel = {
   departmentId?: number | null;
   department?: Department | null
   otherDepartmentIds?: number[]
+  personnelDepartments?: Department[]
 };

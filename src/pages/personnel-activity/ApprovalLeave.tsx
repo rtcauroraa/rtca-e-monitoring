@@ -26,11 +26,11 @@ import DebounceInput from "../../componets/DebounceInput";
 import ApprovalModal from "../approvalProcess/ApprovalModal";
 import { useAuth } from "../../context/UserContext";
 import workflowStepsService from "../../services/workflowStepsService";
+import { ApprovalStageDisplay } from "../../componets/ApprovalStageDisplay";
 
 dayjs.extend(isBetween);
 
 const ApprovalLeave: React.FC = () => {
-  const { Text } = Typography;
 
   const { user } = useAuth();
 
@@ -63,7 +63,7 @@ const ApprovalLeave: React.FC = () => {
     isFetching,
   } = useQuery({
     queryKey: ["personnelActivities", workflowStep],
-    queryFn: async () => await personnelActivityService.getPendingActivities(workflowStep?.stepNumber ?? 0, user?.personnel?.personnelId??0),
+    queryFn: async () => await personnelActivityService.getPendingActivities(user?.userId??0),
     initialData: [],
   });
 
@@ -132,27 +132,19 @@ const ApprovalLeave: React.FC = () => {
       key: "days",
       dataIndex: "days"
     },
-    {
-      title: "Approval Stage",
-      key: "stage",
-      align: "center",
-      width: 130,
-      render: (_, record) => {
-        if (record.status !== "Pending Approval") return <Text type="secondary">-</Text>;
-
-        const stage = record.approvalProccess?.currentStage || 1;
-        const isOfficer = record.personnel?.rank?.rankCategory?.name === "Officer";
-
-        // Normalize stage number for display based on logic in ApprovalTrail
-        const displayStage = isOfficer ? (stage > 2 ? stage - 2 : 1) : stage;
-
-        return (
-          <Tag color="blue" className="rounded-full border-blue-200">
-            Stage {displayStage}
-          </Tag>
-        );
-      },
-    },
+   {
+  title: "Approval Stage",
+  key: "stage",
+  align: "center",
+  width: 140, // Increased slightly to comfortably hold text descriptions 
+  render: (_, record) => (
+    <ApprovalStageDisplay
+      status={record.status}
+      currentStage={record.approvalProccess?.currentStage}
+      isOfficer={record.personnel?.rank?.rankCategory?.name === "Officer"}
+    />
+  ),
+},
     {
       title: "Status",
       key: "status",

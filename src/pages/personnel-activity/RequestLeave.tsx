@@ -61,7 +61,7 @@ const RequestLeave: React.FC = () => {
     queryFn: async () => await activityTypeService.getAll(),
     initialData: [],
   });
-  
+
   const [form] = Form.useForm();
 
   const openModal = (activity?: PersonnelActivity) => {
@@ -104,7 +104,7 @@ const RequestLeave: React.FC = () => {
       title: "Personnel",
       dataIndex: "personnel",
       key: "personnel",
-   
+
       render: (value: Personnel) => nameFormat(value),
       // --- SEARCH LOGIC FOR NAME ---
       filterDropdown: ({
@@ -197,7 +197,7 @@ const RequestLeave: React.FC = () => {
       key: "days",
       align: "center",
       width: 130,
-     
+
     },
     {
       title: "Status",

@@ -24,6 +24,7 @@ export default function LoginTab() {
     try {
       setLoading(true);
       const { user, token } = await authService.login(values);
+      console.log(user)
       setUser(user);
       localStorage.setItem("jwt_token", token ?? "");
       navigate(user?.role?.indexPath ?? "/");

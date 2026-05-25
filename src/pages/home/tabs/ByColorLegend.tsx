@@ -17,9 +17,9 @@ const { Text } = Typography;
 // --- Strong Color Palette ---
 const getRandomColor = (index?: number) => {
   const colors = [
-    "#008080", "#1E6091", "#D97706", "#E11D48", "#6D28D9",
-    "#C2410C", "#0891B2", "#059669", "#B45309", "#BE185D",
-    "#4D7C0F", "#2563EB", "#4338CA", "#C026D3", "#15803D",
+     "#E11D48", "#008080","#6D28D9","#D97706", 
+     "#4D7C0F","#1E6091", "#C2410C", "#0891B2", "#059669", "#B45309", "#BE185D",
+     "#2563EB", "#4338CA", "#C026D3", "#15803D",
     "#0284C7", "#7C3AED", "#DB2777"
   ];
   if (index || index === 0) return colors[index % colors.length];

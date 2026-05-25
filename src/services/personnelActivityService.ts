@@ -16,19 +16,17 @@ export const personnelActivityService = {
   },
 
 
-  getPendingActivities: async (currentStage: number, oicPersonnelId: number): Promise<PersonnelActivity[]> => {
+  getPendingActivities: async (userId: number): Promise<PersonnelActivity[]> => {
     const response = await axiosInstance.get<PersonnelActivity[]>(
       subdirectory + "/pending",
       {
         params: {
-          currentStage,
-          oicPersonnelId
+          userId
         }
       }
     );
     return response.data;
   },
-
   approve: async (
     personnelActivityId: number,
     remarks?: string,
@@ -64,15 +62,15 @@ export const personnelActivityService = {
     return response.data;
   },
 
-checkOverlap: async (
-  personnelActivity: PersonnelActivity
-): Promise<AxiosResponse<{ hasOverlap: boolean; message: string; activity?: PersonnelActivity }>> => {
-  const response = await axiosInstance.post<{ hasOverlap: boolean; message: string; activity?: any }>(
-    `${subdirectory}/check-overlap`,
-    personnelActivity
-  );
-  return response;
-},
+  checkOverlap: async (
+    personnelActivity: PersonnelActivity
+  ): Promise<AxiosResponse<{ hasOverlap: boolean; message: string; activity?: PersonnelActivity }>> => {
+    const response = await axiosInstance.post<{ hasOverlap: boolean; message: string; activity?: any }>(
+      `${subdirectory}/check-overlap`,
+      personnelActivity
+    );
+    return response;
+  },
 
 
   decline: async (

@@ -33,21 +33,26 @@ export default function UserSaveModal({
 
   // Sync form values when selectedUser changes (Edit Mode)
   useEffect(() => {
-    console.log(isModalVisible, selectedUser)
     if (isModalVisible) {
-      const userEmail = selectedUser?.personnel?.email;
-      // If userName is null/empty, extract prefix from email. If no email, fallback to undefined.
+      const userEmail = selectedUser?.personnel?.email || selectedUser?.email;
       const initialUserName = selectedUser?.userName || (userEmail ? userEmail.split("@")[0] : undefined);
+      
+      // FIX: Extract existing secondary role IDs directly from the User's userRoles graph
+      const initialSecondaryRoles = selectedUser?.userRoles?.map(
+        (ur) => ur.roleId
+      ) || [];
+
       form.setFieldsValue({
         userName: initialUserName,
         email: userEmail,
         roleId: selectedUser?.roleId,
         personnelId: selectedUser?.personnelId,
+        secondaryRoleIds: initialSecondaryRoles,
       });
-    } else if (!isModalVisible) {
+    } else {
       form.resetFields();
     }
-  }, [isModalVisible]);
+  }, [isModalVisible, selectedUser, form]);
 
   const { data: personnelList = [] } = useQuery({
     queryKey: ["personnel"],
@@ -65,8 +70,10 @@ export default function UserSaveModal({
 
   const personnelId = Form.useWatch("personnelId", form);
   const selectedPerson = personnelList.find((p) => p.personnelId === personnelId);
-
   const displayPerson = selectedUser?.personnel || selectedPerson;
+
+  // Track primary role assignment to prevent user from matching it in secondary multi-select fields
+  const currentPrimaryRoleId = Form.useWatch("roleId", form);
 
   const handleOk = async () => {
     try {
@@ -92,9 +99,12 @@ export default function UserSaveModal({
 
   const handlePersonnelChange = (id: number | null) => {
     const person = personnelList.find((p) => p.personnelId === id);
+    
+    // Reset secondary choices on clean personnel pick since they don't have a user account record yet
     form.setFieldsValue({
       email: person?.email || undefined,
       userName: person?.email ? person.email.split("@")[0] : undefined,
+      secondaryRoleIds: [],
     });
   };
 
@@ -109,7 +119,7 @@ export default function UserSaveModal({
       confirmLoading={loading}
       width={520}
     >
-      {/* Profile Header */}
+      {/* Profile Header Block */}
       <div
         style={{
           display: "flex",
@@ -150,7 +160,6 @@ export default function UserSaveModal({
       </div>
 
       <Form form={form} layout="vertical">
-
         <div style={{ marginBottom: "12px" }} hidden={!!selectedUser?.personnelId}>
           <PersonnelSelectComponent
             required={false}
@@ -159,7 +168,6 @@ export default function UserSaveModal({
             onChange={handlePersonnelChange}
           />
         </div>
-
 
         <div className="grid grid-cols-2 gap-x-4">
           <Form.Item
@@ -172,7 +180,7 @@ export default function UserSaveModal({
 
           <Form.Item
             name="roleId"
-            label="Role"
+            label="Primary Role"
             rules={[{ required: true, message: "Required" }]}
           >
             <Select
@@ -184,6 +192,27 @@ export default function UserSaveModal({
             />
           </Form.Item>
         </div>
+
+        {/* Secondary Roles Multi-Select Input Field */}
+        <Form.Item
+          name="secondaryRoleIds"
+          label="Secondary Permissions / Roles"
+          extra="Assign additional structural user contexts to this account workspace layout."
+        >
+          <Select
+            mode="multiple"
+            allowClear
+            style={{ width: "100%" }}
+            placeholder="Select additional roles"
+            loading={rolesLoading}
+            options={roles
+              ?.filter((role: Role) => role.roleId !== currentPrimaryRoleId) // Filter out selected primary role
+              ?.map((role: Role) => ({
+                label: role.roleName,
+                value: role.roleId,
+              }))}
+          />
+        </Form.Item>
 
         <Form.Item
           name="email"

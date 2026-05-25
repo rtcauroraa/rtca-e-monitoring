@@ -86,11 +86,32 @@ const UserIndex: React.FC = () => {
       key: "userName",
       dataIndex:"userName"
     },
-    {
-      title: "Role",
-      key: "role",
-      render: (_, record) => record.role?.roleName
-    },
+   {
+  title: "Role/s",
+  key: "roles",
+  render: (_, record) => {
+    // Extract secondary role names from the userRoles array graph
+    const secondaryRolesList = record.userRoles
+      ?.map((ur) => ur.role?.roleName)
+      ?.filter(Boolean) || [];
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        {/* Primary Role (Bold Blue Text) */}
+        <span style={{ fontWeight: 600, color: "#1677ff" }}>
+          {record.role?.roleName || "No Primary Role"}
+        </span>
+
+        {/* Secondary Roles Block */}
+        {secondaryRolesList.length > 0 && (
+          <span style={{ fontSize: "13px", color: "#555555" }}>
+            Other: {secondaryRolesList.join(", ")}
+          </span>
+        )}
+      </div>
+    );
+  }
+},
 
     {
       title: "Actions",
