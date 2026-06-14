@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { Table, Tag, Space, Typography, Card, Button, Badge } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
-import { DownloadOutlined, FileExcelOutlined, FilePdfOutlined, PrinterOutlined } from '@ant-design/icons';
+import { FileExcelOutlined, FilePdfOutlined, PrinterOutlined } from '@ant-design/icons';
 import dashboardService from '../../../services/dashboardService';
 import nameFormat from '../../../utils/nameFormat';
 
