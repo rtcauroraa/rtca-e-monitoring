@@ -1,7 +1,7 @@
 import { Button, Table, Select, Space, Input } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useQuery } from "@tanstack/react-query";
-import personelService from "../../services/personelService"; // Assuming this now returns AllPersonnelLeaveDto[]
+import personelService from "../../services/personelService";
 import nameFormat from "../../utils/nameFormat";
 import { useState, useMemo } from "react";
 import LeaveCreditModal from "./CreditsModal";
@@ -18,13 +18,11 @@ export default function ActivityHistoryPage() {
   const [searchText, setSearchText] = useState<string>("");
 
   // --- API Queries ---
-  // Updated query to fetch the combined dataset using your new backend DTO structure
   const { data: personnelLeaveData, isLoading: loadingData } = useQuery<
     AllPersonnelLeaveDto[]
   >({
     queryKey: ["personnelLeaveData", selectedYear],
     queryFn: async () => {
-      // Pass your selectedYear filter to your backend service endpoint if applicable
       const yearParam = selectedYear === "All" ? undefined : selectedYear;
       return await personelService.getAllPersonnelCredits(yearParam);
     },
@@ -37,11 +35,9 @@ export default function ActivityHistoryPage() {
     initialData: [],
   });
 
-  // --- Extract Unique Years from Data for Dropdown Options ---
+  // --- Extract Unique Years ---
   const yearOptions = useMemo(() => {
     const yearsSet = new Set<number>();
-
-    // Fallback collection to build active filter parameters from the composite payload history
     personnelLeaveData.forEach((p) => {
       p.personnelActivities?.forEach((pa) => {
         if (pa.startDate) {
@@ -65,100 +61,117 @@ export default function ActivityHistoryPage() {
   // --- Filtered Personnel Data ---
   const filteredPersonnels = useMemo(() => {
     if (!searchText.trim()) return personnelLeaveData;
-
     const lowerSearch = searchText.toLowerCase();
-    return personnelLeaveData.filter((p) => {
-      const fullName = nameFormat(p).toLowerCase();
-      return fullName.includes(lowerSearch);
-    });
+    return personnelLeaveData.filter((p) =>
+      nameFormat(p).toLowerCase().includes(lowerSearch),
+    );
   }, [personnelLeaveData, searchText]);
 
+  // --- Dynamic Grouped Columns ---
   const dynamicColumns = useMemo(() => {
     const baseColumns: ColumnsType<AllPersonnelLeaveDto> = [
       {
         title: "Personnel",
         key: "personnel",
         fixed: "left",
-        width: 290,
+        width: 240,
         render: (_, record) => (
-          <span className="text-xs break-words">{nameFormat(record)}</span>
+          <span className="text-xs font-medium break-words">
+            {nameFormat(record)}
+          </span>
         ),
       },
     ];
 
+    // Map each activity type to an Ant Design Grouped Column layout
     const activityColumns: ColumnsType<AllPersonnelLeaveDto> =
       activityTypes.map((type) => ({
         title: `${type.activityTypeName} (${type.maxCredits || 0})`,
-        key: `activity-${type.activityTypeId}`,
-        render: (_, record: AllPersonnelLeaveDto) => {
-          const creditInfo = record.leaveCredits?.find(
-            (lc) => lc.activityTypeId === type.activityTypeId,
-          );
+        key: `group-${type.activityTypeId}`,
+        align: "center",
+        children: [
+          {
+            title: "Logs",
+            key: `logs-${type.activityTypeId}`,
+            width: 180,
+            render: (_, record) => {
+              const filteredActivities = (
+                record.personnelActivities || []
+              ).filter((pa) => {
+                const matchesType = pa.activityTypeId === type.activityTypeId;
+                if (!matchesType) return false;
+                if (selectedYear === "All") return true;
 
-          const filteredActivities = (record.personnelActivities || []).filter(
-            (pa) => {
-              const matchesType = pa.activityTypeId === type.activityTypeId;
-              if (!matchesType) return false;
-              if (selectedYear === "All") return true;
+                const startYear = pa.startDate
+                  ? new Date(pa.startDate).getFullYear()
+                  : null;
+                const endYear = pa.endDate
+                  ? new Date(pa.endDate).getFullYear()
+                  : null;
+                return startYear === selectedYear || endYear === selectedYear;
+              });
 
-              const startYear = pa.startDate
-                ? new Date(pa.startDate).getFullYear()
-                : null;
-              const endYear = pa.endDate
-                ? new Date(pa.endDate).getFullYear()
-                : null;
-              return startYear === selectedYear || endYear === selectedYear;
-            },
-          );
+              if (filteredActivities.length === 0) {
+                return (
+                  <span className="text-gray-400 text-xs block text-center">
+                    -
+                  </span>
+                );
+              }
 
-          const remainingCredits = creditInfo
-            ? creditInfo.remainingCredits
-            : (type.maxCredits ?? 0);
-
-          if (filteredActivities.length === 0) {
-            return;
-          }
-
-          return (
-            <div className="flex flex-col gap-2 min-w-[150px]">
-              <div className="flex flex-col">
-                {filteredActivities.map((pa, idx) => (
-                  <div
-                    key={pa.personnelActivityId || idx}
-                    className="flex flex-col gap-0.5 border-b border-gray-100 last:border-0 pb-1.5 last:pb-0"
-                  >
-                    {pa.title && (
-                      <span className="font-semibold text-gray-900 text-xs">
-                        {pa.title}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-                      <span>{formatDateRange(pa.startDate, pa.endDate)}</span>
-                      {pa.days && (
-                        <span className="text-gray-400 font-normal">
-                          ({pa.days}d)
+              return (
+                <div className="flex flex-col gap-1.5 max-h-[120px] overflow-y-auto pr-1">
+                  {filteredActivities.map((pa, idx) => (
+                    <div
+                      key={pa.personnelActivityId || idx}
+                      className="flex flex-col border-b border-gray-100 last:border-0 pb-1 last:pb-0"
+                    >
+                      {pa.title && (
+                        <span className="font-semibold text-gray-800 text-[11px] truncate">
+                          {pa.title}
                         </span>
                       )}
+                      <span className="text-[10px] text-gray-500 font-medium">
+                        {formatDateRange(pa.startDate, pa.endDate)}
+                        {pa.days && (
+                          <span className="text-gray-400 font-normal ml-1">
+                            ({pa.days}d)
+                          </span>
+                        )}
+                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              );
+            },
+          },
+          {
+            title: "Credits Left",
+            key: `credits-${type.activityTypeId}`,
+            width: 100,
+            align: "center",
+            render: (_, record) => {
+              const creditInfo = record.leaveCredits?.find(
+                (lc) => lc.activityTypeId === type.activityTypeId,
+              );
+              const remainingCredits = creditInfo
+                ? creditInfo.remainingCredits
+                : (type.maxCredits ?? 0);
 
-              <div className="pt-1.5 border-t border-dashed border-gray-200 mt-1">
+              return (
                 <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                     remainingCredits <= 0
-                      ? "bg-red-50 text-red-600 border border-red-100"
-                      : "bg-green-50 text-green-600 border border-green-100"
+                      ? "bg-red-50 text-red-600 border-red-200"
+                      : "bg-green-50 text-green-600 border-green-200"
                   }`}
                 >
-                  Remaining Credits: {remainingCredits}
+                  {remainingCredits}
                 </span>
-              </div>
-            </div>
-          );
-        },
+              );
+            },
+          },
+        ],
       }));
 
     const actionColumn: ColumnsType<AllPersonnelLeaveDto> = [
@@ -166,7 +179,7 @@ export default function ActivityHistoryPage() {
         title: "Action",
         key: "action",
         fixed: "right",
-        width: 130,
+        width: 100,
         align: "center",
         render: (_, record) => (
           <Button
@@ -197,10 +210,10 @@ export default function ActivityHistoryPage() {
       />
 
       <div className="flex flex-col gap-4 bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-        {/* Filter Controls Toolbar */}
+        {/* Filter Toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
           <span className="font-semibold text-gray-700 text-sm">
-            Activity Logs
+            Activity & Credit Logs
           </span>
           <Space wrap size="middle">
             <Input
@@ -212,7 +225,6 @@ export default function ActivityHistoryPage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-
             <Space size="small">
               <span className="text-xs text-gray-500 font-medium">
                 Filter Year:
@@ -229,14 +241,16 @@ export default function ActivityHistoryPage() {
           </Space>
         </div>
 
+        {/* Data Table */}
         <Table
           size="small"
+          bordered
           sticky
           dataSource={filteredPersonnels}
           columns={dynamicColumns}
           rowKey="personnelId"
           loading={isLoading}
-          scroll={{ x: "max-content" }}
+          scroll={{ x: "max-content", y: 600 }}
           pagination={false}
         />
       </div>
