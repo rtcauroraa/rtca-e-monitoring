@@ -1,3 +1,4 @@
+import type { AllPersonnelLeaveDto } from "../@types/nonTable/AllPersonnelLeaveDto";
 import type { EnlistedPersonnelETE } from "../@types/nonTable/EnlistedPersonnelETE";
 import type { PersonnelLeaveCredits } from "../@types/nonTable/PersonnelLeaveCredits";
 import type { PersonnelLongevityPay } from "../@types/nonTable/PersonnelLongevityPay";
@@ -19,9 +20,21 @@ export const personelService = {
         params: {
           activityTypeId: activityTypeId || undefined,
           year: year || undefined,
-          date: date || undefined
-        }
-      }
+          date: date || undefined,
+        },
+      },
+    );
+    return response.data;
+  },
+
+  getAllPersonnelCredits: async (year?: number | null) => {
+    const response = await axiosInstance.get<AllPersonnelLeaveDto[]>(
+      `${subdirectory}/credits`,
+      {
+        params: {
+          year: year || undefined,
+        },
+      },
     );
     return response.data;
   },

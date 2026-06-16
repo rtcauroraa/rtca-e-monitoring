@@ -75,9 +75,9 @@ export const emptyPersonnel: Personnel = {
 };
 
 const PersonnelIndex: React.FC = () => {
-    const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
 
-  const { handlePrint } = usePrint({ ref,orientation:'landscape' });
+  const { handlePrint } = usePrint({ ref, orientation: "landscape" });
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(
     null,
   );
@@ -89,7 +89,7 @@ const PersonnelIndex: React.FC = () => {
   const [userForm] = Form.useForm<Usertbl>();
   const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
   const [statusForm] = Form.useForm();
-  
+
   const { data: departments } = useQuery({
     queryKey: ["departments"],
     queryFn: async () => await departmentService.getAll(),
@@ -115,50 +115,64 @@ const PersonnelIndex: React.FC = () => {
   // Helper to format designation column string safely for downloads and prints
   const getDesignationString = (record: Personnel) => {
     const primaryDeptName = record.department?.departmentName || "";
-    const hasOtherDepts = record.otherDepartmentIds && record.otherDepartmentIds.length > 0;
+    const hasOtherDepts =
+      record.otherDepartmentIds && record.otherDepartmentIds.length > 0;
     const otherDeptNames = hasOtherDepts
       ? departments
-          ?.filter((dept) => record.otherDepartmentIds?.includes(dept.departmentId ?? 0))
+          ?.filter((dept) =>
+            record.otherDepartmentIds?.includes(dept.departmentId ?? 0),
+          )
           ?.map((dept) => dept.departmentName)
           ?.join(", ")
       : "";
 
     if (!primaryDeptName && !otherDeptNames) return "";
-    if (primaryDeptName && otherDeptNames) return `${primaryDeptName} (Other: ${otherDeptNames})`;
+    if (primaryDeptName && otherDeptNames)
+      return `${primaryDeptName} (Other: ${otherDeptNames})`;
     return primaryDeptName || otherDeptNames || "";
   };
 
   // --- EXPORT FUNCTIONALITIES ---
-  
+
   const exportToExcel = () => {
-    const fileType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+    const fileType =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
     const fileExtension = ".xlsx";
-    
+
     const excelData = currentData.map((item, index) => ({
-      "Nr": index + 1,
-      "Name": nameFormat(item),
-      "Designation": getDesignationString(item),
-      "Email": item.email || "",
-      "Date Entered Service": item.dateEnteredService ? formatDateToMilitary(item.dateEnteredService) : "",
-      "Date Enlisted/Commissioned": item.dateEnlisted ? formatDateToMilitary(item.dateEnlisted) : "",
-      "Last Promotion": item.dateOfLastPromotion ? formatDateToMilitary(item.dateOfLastPromotion) : "",
+      Nr: index + 1,
+      Name: nameFormat(item),
+      Designation: getDesignationString(item),
+      Email: item.email || "",
+      "Date Entered Service": item.dateEnteredService
+        ? formatDateToMilitary(item.dateEnteredService)
+        : "",
+      "Date Enlisted/Commissioned": item.dateEnlisted
+        ? formatDateToMilitary(item.dateEnlisted)
+        : "",
+      "Last Promotion": item.dateOfLastPromotion
+        ? formatDateToMilitary(item.dateOfLastPromotion)
+        : "",
       "Has Account": item.hasAccount ? "Yes" : "No",
     }));
 
     const ws = XLSX.utils.json_to_sheet(excelData);
-    const wb = { Sheets: { 'Personnel': ws }, SheetNames: ['Personnel'] };
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const wb = { Sheets: { Personnel: ws }, SheetNames: ["Personnel"] };
+    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     const data = new Blob([excelBuffer], { type: fileType });
-    saveAs(data, `Personnel_Report_${dayjs().format("YYYY-MM-DD")}${fileExtension}`);
+    saveAs(
+      data,
+      `Personnel_Report_${dayjs().format("YYYY-MM-DD")}${fileExtension}`,
+    );
   };
 
   const exportToPDF = () => {
     const doc = new jsPDF({
       orientation: "landscape",
       unit: "mm",
-      format: "a4"
+      format: "a4",
     });
-    
+
     doc.setFontSize(16);
     doc.text("Personnel List Report", 14, 15);
     doc.setFontSize(10);
@@ -166,23 +180,27 @@ const PersonnelIndex: React.FC = () => {
 
     // Explicitly omitting "Has Account" / "Account"
     const tableColumn = [
-      "Nr", 
-      "Name", 
-      "Designation", 
-      "Email", 
-      "Date Entered Service", 
-      "Date Enlisted / Commissioned", 
-      "Last Promotion"
+      "Nr",
+      "Name",
+      "Designation",
+      "Email",
+      "Date Entered Service",
+      "Date Enlisted / Commissioned",
+      "Last Promotion",
     ];
-    
-    const tableRows :any = currentData.map((item, index) => [
+
+    const tableRows: any = currentData.map((item, index) => [
       index + 1,
       nameFormat(item),
       getDesignationString(item),
       item.email || "",
-      item.dateEnteredService ? formatDateToMilitary(item.dateEnteredService) : "",
+      item.dateEnteredService
+        ? formatDateToMilitary(item.dateEnteredService)
+        : "",
       item.dateEnlisted ? formatDateToMilitary(item.dateEnlisted) : "",
-      item.dateOfLastPromotion ? formatDateToMilitary(item.dateOfLastPromotion) : ""
+      item.dateOfLastPromotion
+        ? formatDateToMilitary(item.dateOfLastPromotion)
+        : "",
     ]);
 
     autoTable(doc, {
@@ -191,7 +209,7 @@ const PersonnelIndex: React.FC = () => {
       startY: 28,
       theme: "striped",
       styles: { fontSize: 9, overflow: "linebreak" },
-      columnStyles: { 
+      columnStyles: {
         0: { cellWidth: 10 },
         1: { cellWidth: 45 },
         2: { cellWidth: 55 },
@@ -199,13 +217,12 @@ const PersonnelIndex: React.FC = () => {
         4: { cellWidth: 35 },
         5: { cellWidth: 35 },
         6: { cellWidth: 35 },
-      }
+      },
     });
 
     doc.save(`Personnel_Report_${dayjs().format("YYYY-MM-DD")}.pdf`);
   };
 
- 
   const exportMenuItems: MenuProps["items"] = [
     {
       key: "excel",
@@ -223,7 +240,7 @@ const PersonnelIndex: React.FC = () => {
       key: "print",
       label: "Print Table",
       icon: <PrinterOutlined className="text-blue-500" />,
-      onClick:()=> handlePrint(),
+      onClick: () => handlePrint(),
     },
   ];
 
@@ -231,9 +248,15 @@ const PersonnelIndex: React.FC = () => {
     if (personnel) {
       form.setFieldsValue({
         ...personnel,
-        dateEnlisted: personnel.dateEnlisted ? dayjs(personnel.dateEnlisted) : null,
-        dateEnteredService: personnel.dateEnteredService ? dayjs(personnel.dateEnteredService) : null,
-        dateOfLastPromotion: personnel.dateOfLastPromotion ? dayjs(personnel.dateOfLastPromotion) : null,
+        dateEnlisted: personnel.dateEnlisted
+          ? dayjs(personnel.dateEnlisted)
+          : null,
+        dateEnteredService: personnel.dateEnteredService
+          ? dayjs(personnel.dateEnteredService)
+          : null,
+        dateOfLastPromotion: personnel.dateOfLastPromotion
+          ? dayjs(personnel.dateOfLastPromotion)
+          : null,
       });
       setSelectedPersonnel(personnel);
     } else {
@@ -316,17 +339,20 @@ const PersonnelIndex: React.FC = () => {
       width: 200,
       render: (_, record: Personnel) => {
         const primaryDeptName = record.department?.departmentName;
-        const hasOtherDepts = record.otherDepartmentIds && record.otherDepartmentIds.length > 0;
+        const hasOtherDepts =
+          record.otherDepartmentIds && record.otherDepartmentIds.length > 0;
 
         const otherDeptNames = hasOtherDepts
           ? departments
-              ?.filter((dept) => record.otherDepartmentIds?.includes(dept.departmentId ?? 0))
+              ?.filter((dept) =>
+                record.otherDepartmentIds?.includes(dept.departmentId ?? 0),
+              )
               ?.map((dept) => dept.departmentName)
               ?.join(", ")
           : "";
 
         if (!primaryDeptName && !otherDeptNames) return "";
-        
+
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             {primaryDeptName && (
@@ -336,12 +362,18 @@ const PersonnelIndex: React.FC = () => {
             )}
             {otherDeptNames && (
               <span style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                {primaryDeptName ? <><b>Other:</b> {otherDeptNames}</> : otherDeptNames}
+                {primaryDeptName ? (
+                  <>
+                    <b>Other:</b> {otherDeptNames}
+                  </>
+                ) : (
+                  otherDeptNames
+                )}
               </span>
             )}
           </div>
         );
-      }
+      },
     },
     {
       title: "Email",
@@ -378,9 +410,13 @@ const PersonnelIndex: React.FC = () => {
       ],
       render: (value) => {
         return value ? (
-          <CheckOutlined style={{ color: "#52c41a", fontSize: "16px", fontWeight: "bold" }} />
+          <CheckOutlined
+            style={{ color: "#52c41a", fontSize: "16px", fontWeight: "bold" }}
+          />
         ) : (
-          <CloseOutlined style={{ color: "#ff4d4f", fontSize: "16px", fontWeight: "bold" }} />
+          <CloseOutlined
+            style={{ color: "#ff4d4f", fontSize: "16px", fontWeight: "bold" }}
+          />
         );
       },
     },
@@ -434,11 +470,9 @@ const PersonnelIndex: React.FC = () => {
           <Button type="primary" onClick={() => openModal()}>
             Add Personnel
           </Button>
-          
+
           <Dropdown menu={{ items: exportMenuItems }} placement="bottomLeft">
-            <Button icon={<DownloadOutlined />}>
-              Export / Print
-            </Button>
+            <Button icon={<DownloadOutlined />}>Export / Print</Button>
           </Dropdown>
         </Space>
 
@@ -462,31 +496,34 @@ const PersonnelIndex: React.FC = () => {
           }}
         />
       </div>
-<div ref={ref}>
-<Table
-        sticky
-        scroll={{ x: "max-content"}}
-        pagination={false}
-        size="small"
-        columns={columns}
-        dataSource={currentData}
-        rowKey="personnelId"
-        loading={isFetching}
-        expandable={{
-          expandedRowRender: (record) => (
-            <PersonnelActivitiesTable selectedPersonnel={record} />
-          ),
-          rowExpandable: (record) =>
-            (record.personnelActivities?.length || 0) > 0,
-        }}
-      />
-</div>
-      
+      <div ref={ref}>
+        <Table
+          sticky
+          scroll={{ x: "max-content" }}
+          pagination={false}
+          size="small"
+          columns={columns}
+          dataSource={currentData}
+          rowKey="personnelId"
+          loading={isFetching}
+          expandable={{
+            expandedRowRender: (record) => (
+              <PersonnelActivitiesTable selectedPersonnel={record} />
+            ),
+            rowExpandable: (record) =>
+              (record.personnelActivities?.length || 0) > 0,
+          }}
+        />
+      </div>
+
       <UserSaveModal
         form={userForm}
         isModalVisible={isUserModalVisible}
         setIsModalVisible={setIsUserModalVisible}
-        selectedUser={{personnel:selectedPersonnel,personnelId:selectedPersonnel?.personnelId}}
+        selectedUser={{
+          personnel: selectedPersonnel,
+          personnelId: selectedPersonnel?.personnelId,
+        }}
         onAfterSave={() => refetch()}
       />
       <CreditsModal

@@ -43,24 +43,32 @@ const RankIndex: React.FC = () => {
   const columns: ColumnsType<Rank> = [
     { title: "Code", dataIndex: "rankCode", key: "rankCode" },
     {
-      title: "Name", dataIndex: "rankName", key: "rankName"
+      title: "Name",
+      dataIndex: "rankName",
+      key: "rankName",
     },
     {
-      title: "Category", dataIndex: "rankCategory", key: "rankCategory",
-      render: (_, record: Rank) => record.rankCategory?.name
+      title: "Category",
+      dataIndex: "rankCategory",
+      key: "rankCategory",
+      render: (_, record: Rank) => record.rankCategory?.name,
     },
     {
-      title: "Grade", dataIndex: "grade", key: "grade"
-
+      title: "Grade",
+      dataIndex: "grade",
+      key: "grade",
     },
     {
-      title: "Base Pay", dataIndex: "basePay", key: "basePay",
+      title: "Base Pay",
+      dataIndex: "basePay",
+      key: "basePay",
       render: (value: number) => value && formattedPeso(value),
-
     },
     {
-      title: "Order", dataIndex: "rankLevel", key: "rankLevel", render: (value: number) => getOrdinalSuffix(value)
-
+      title: "Order",
+      dataIndex: "rankLevel",
+      key: "rankLevel",
+      render: (value: number) => getOrdinalSuffix(value),
     },
     {
       title: "Actions",

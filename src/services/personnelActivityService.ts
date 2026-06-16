@@ -51,6 +51,16 @@ export const personnelActivityService = {
     return response.data;
   },
 
+  insertManualLeave: async (
+    personnelActivity: PersonnelActivity
+  ): Promise<PersonnelActivity> => {
+    const response = await axiosInstance.post<PersonnelActivity>(
+      `${subdirectory}/schooling`,
+      personnelActivity,
+    );
+    return response.data;
+  },
+
 
   insertRestricted: async (
     personnelActivity: PersonnelActivity

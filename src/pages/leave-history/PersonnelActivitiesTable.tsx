@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Table, Space, Button, Tooltip } from "antd";
-import { FileExcelOutlined, FilePdfOutlined, PrinterOutlined } from "@ant-design/icons";
+import {
+  FileExcelOutlined,
+  FilePdfOutlined,
+  PrinterOutlined,
+} from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { PersonnelActivity } from "../../@types/PersonnelActivity";
 import { formatDateToMilitary } from "../../utils/formatDateToMilitary";
@@ -19,19 +23,33 @@ type PersonnelActivitiesTableProps = {
   year?: number | null;
 };
 
-export default function PersonnelActivitiesTable({ selectedPersonnel, year }: PersonnelActivitiesTableProps) {
-  const [selectedYear, setSelectedYear] = useState<number | null | undefined>(year || new Date().getFullYear());
+export default function PersonnelActivitiesTable({
+  selectedPersonnel,
+  year,
+}: PersonnelActivitiesTableProps) {
+  const [selectedYear, setSelectedYear] = useState<number | null | undefined>(
+    year || new Date().getFullYear(),
+  );
 
   const { data: personnelActivities, isFetching } = useQuery({
-    queryKey: ["activities", selectedPersonnel?.personnelId, year, selectedYear],
-    queryFn: async () => await personnelActivityService.getByPersonnelId(selectedPersonnel?.personnelId, year ?? selectedYear),
-    enabled:true,
+    queryKey: [
+      "activities",
+      selectedPersonnel?.personnelId,
+      year,
+      selectedYear,
+    ],
+    queryFn: async () =>
+      await personnelActivityService.getByPersonnelId(
+        selectedPersonnel?.personnelId,
+        year ?? selectedYear,
+      ),
+    enabled: true,
     initialData: [],
   });
-const getFileName = (extension: string) => {
+  const getFileName = (extension: string) => {
     const name = nameFormat(selectedPersonnel) || "Personnel";
     const yearLabel = year ?? selectedYear;
-    const safeName = name.replace(/[^a-z0-9]/gi, '_');
+    const safeName = name.replace(/[^a-z0-9]/gi, "_");
     return `${safeName}_Leave_History_${yearLabel}.${extension}`;
   };
   // --- Export Functions ---
@@ -48,13 +66,13 @@ const getFileName = (extension: string) => {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Leave History");
-   XLSX.writeFile(workbook, getFileName("xlsx"));
+    XLSX.writeFile(workbook, getFileName("xlsx"));
   };
 
   const exportToPDF = (isPrint = false) => {
     const doc = new jsPDF();
     doc.text("Personnel Leave History", 14, 15);
-    
+
     const tableColumn = ["Type", "Title", "Start", "End", "Result", "Status"];
     const tableRows = personnelActivities.map((a) => [
       a.activityType?.activityTypeName || "-",
@@ -75,18 +93,37 @@ const getFileName = (extension: string) => {
       doc.autoPrint();
       window.open(doc.output("bloburl"), "_blank");
     } else {
-     doc.save(getFileName("pdf"));
+      doc.save(getFileName("pdf"));
     }
   };
 
   const activityColumns: ColumnsType<PersonnelActivity> = [
-    { title: "Type", dataIndex: ["activityType", "activityTypeName"], key: "type" },
+    {
+      title: "Type",
+      dataIndex: ["activityType", "activityTypeName"],
+      key: "type",
+    },
     { title: "Title", dataIndex: "title", key: "title" },
-    { title: "Start", dataIndex: "startDate", key: "startDate", render: (d) => (d ? formatDateToMilitary(d) : "-") },
-    { title: "End", dataIndex: "endDate", key: "endDate", render: (d) => (d ? formatDateToMilitary(d) : "-") },
+    {
+      title: "Start",
+      dataIndex: "startDate",
+      key: "startDate",
+      render: (d) => (d ? formatDateToMilitary(d) : "-"),
+    },
+    {
+      title: "End",
+      dataIndex: "endDate",
+      key: "endDate",
+      render: (d) => (d ? formatDateToMilitary(d) : "-"),
+    },
     { title: "Day/s", dataIndex: "days", key: "days" },
     { title: "Remarks", dataIndex: "remarks", key: "remarks", ellipsis: true },
-    { title: "Status", dataIndex: "status", key: "status", render: (status) => <StatusTag status={status} /> },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => <StatusTag status={status} />,
+    },
   ];
 
   return (
@@ -99,20 +136,35 @@ const getFileName = (extension: string) => {
             <h2 className="text-lg font-semibold">Leave History</h2>
             <Space>
               <Tooltip title="Download Excel">
-                <Button icon={<FileExcelOutlined />} onClick={exportToExcel} >Excel</Button>
+                <Button icon={<FileExcelOutlined />} onClick={exportToExcel}>
+                  Excel
+                </Button>
               </Tooltip>
               <Tooltip title="Download PDF">
-                <Button icon={<FilePdfOutlined />} onClick={() => exportToPDF(false)} >PDF</Button>
+                <Button
+                  icon={<FilePdfOutlined />}
+                  onClick={() => exportToPDF(false)}
+                >
+                  PDF
+                </Button>
               </Tooltip>
               <Tooltip title="Print">
-                <Button icon={<PrinterOutlined />} onClick={() => exportToPDF(true)}>Print</Button>
+                <Button
+                  icon={<PrinterOutlined />}
+                  onClick={() => exportToPDF(true)}
+                >
+                  Print
+                </Button>
               </Tooltip>
             </Space>
           </div>
           {!year && (
             <Space>
               <span className="font-medium">Filter Year:</span>
-              <YearSelect value={selectedYear} onChange={(val) => setSelectedYear(val)} />
+              <YearSelect
+                value={selectedYear}
+                onChange={(val) => setSelectedYear(val)}
+              />
             </Space>
           )}
         </div>
