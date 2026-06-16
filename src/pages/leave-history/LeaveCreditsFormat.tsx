@@ -42,13 +42,6 @@ export default function LeaveCreditsFormat({
     enabled: !!selectedPersonnel?.personnelId,
   });
 
-  const { data: personneltestCredits } = useQuery({
-    queryKey: ["personneltestCredits", selectedYear],
-    queryFn: async () =>
-      await personelService.getAllPersonnelCredits(selectedYear),
-    enabled: !!selectedPersonnel?.personnelId,
-  });
-
   useEffect(() => {
     if (selectedPersonnel) {
       setPreview(imageUtility.getProfile(selectedPersonnel.profile) ?? "");

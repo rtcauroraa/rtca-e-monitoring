@@ -24,7 +24,7 @@ function App() {
             Table: {
               borderColor: "#C0C0C0", // Clean standard gray border
 
-              headerBg: "#C0C0C0",
+              headerBg: "#E5E4E2",
               headerColor: "#1f1f1f",
               headerBorderRadius: 8,
             },

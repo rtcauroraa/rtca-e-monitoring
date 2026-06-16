@@ -1,9 +1,7 @@
 import type { Department } from "./Department";
 import type { EnlistmentRecord } from "./EnlistmentRecord";
 import type { PersonnelActivity } from "./PersonnelActivity";
-import type { PersonnelDutyLogs } from "./PersonnelDutyLogs";
 import type { Rank } from "./Rank";
-
 
 export type Personnel = {
   personnelId?: number | null;
@@ -22,9 +20,9 @@ export type Personnel = {
   dateOfLastPromotion?: string | null;
   personnelActivities?: PersonnelActivity[];
   enlistmentRecords?: EnlistmentRecord[];
-  dutyStatus?: PersonnelDutyLogs | null;
+  dutyStatus?: string | null;
   departmentId?: number | null;
-  department?: Department | null
-  otherDepartmentIds?: number[]
-  personnelDepartments?: Department[]
+  department?: Department | null;
+  otherDepartmentIds?: number[];
+  personnelDepartments?: Department[];
 };

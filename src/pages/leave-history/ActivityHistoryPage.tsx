@@ -1,4 +1,4 @@
-import { Button, Table, Select, Space, Input } from "antd";
+import { Button, Table, Select, Space, Input, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useQuery } from "@tanstack/react-query";
 import personelService from "../../services/personelService";
@@ -7,8 +7,14 @@ import { useState, useMemo } from "react";
 import LeaveCreditModal from "./CreditsModal";
 import activityTypeService from "../../services/activityTypeService";
 import { formatDateRange } from "../../utils/formatDateRange";
-import { SearchOutlined } from "@ant-design/icons";
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import type { AllPersonnelLeaveDto } from "../../@types/nonTable/AllPersonnelLeaveDto";
+import type { ActivityData } from "../../@types/dashboardGraphs/ActivityData";
+import dashboardService from "../../services/dashboardService";
 
 export default function ActivityHistoryPage() {
   const [selectedPersonnel, setSelectedPersonnel] =
@@ -29,11 +35,22 @@ export default function ActivityHistoryPage() {
     initialData: [],
   });
 
+  const { data: activityData } = useQuery({
+    queryKey: ["activityData"],
+    queryFn: async () => await dashboardService.getPersonnelByActivityType(),
+    initialData: [],
+  });
+
   const { data: activityTypes, isLoading: loadingTypes } = useQuery({
     queryKey: ["activityTypes"],
     queryFn: async () => await activityTypeService.getAll(),
     initialData: [],
   });
+
+  const columns = [
+    { title: "Activity", dataIndex: "activity", key: "activity" },
+    { title: "Personnel", dataIndex: "personnel", key: "personnel" },
+  ];
 
   // --- Extract Unique Years ---
   const yearOptions = useMemo(() => {
@@ -58,7 +75,34 @@ export default function ActivityHistoryPage() {
     ];
   }, [personnelLeaveData]);
 
-  // --- Filtered Personnel Data ---
+  const renderDutyStatusBadge = (dutyStatus?: string | null) => {
+    const normalizedStatus = dutyStatus?.trim();
+
+    // 1. Active / Present Status
+    if (normalizedStatus === "Active") {
+      return (
+        <Tag
+          color="success"
+          icon={<CheckCircleOutlined />}
+          className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase"
+        >
+          On Duty
+        </Tag>
+      );
+    }
+
+    return (
+      <Tag
+        color="error"
+        icon={<ClockCircleOutlined />}
+        className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase max-w-[180px] truncate"
+        title={normalizedStatus}
+      >
+        {normalizedStatus}
+      </Tag>
+    );
+  };
+
   const filteredPersonnels = useMemo(() => {
     if (!searchText.trim()) return personnelLeaveData;
     const lowerSearch = searchText.toLowerCase();
@@ -67,18 +111,20 @@ export default function ActivityHistoryPage() {
     );
   }, [personnelLeaveData, searchText]);
 
-  // --- Dynamic Grouped Columns ---
   const dynamicColumns = useMemo(() => {
     const baseColumns: ColumnsType<AllPersonnelLeaveDto> = [
       {
         title: "Personnel",
         key: "personnel",
         fixed: "left",
-        width: 240,
         render: (_, record) => (
-          <span className="text-xs font-medium break-words">
-            {nameFormat(record)}
-          </span>
+          <div className="flex flex-col gap-1.5 py-1">
+            <span className="text-xs font-semibold text-gray-900 break-words">
+              {nameFormat(record)}
+            </span>
+
+            <div>{renderDutyStatusBadge(record.dutyStatus)}</div>
+          </div>
         ),
       },
     ];
@@ -241,6 +287,15 @@ export default function ActivityHistoryPage() {
           </Space>
         </div>
 
+        <Table<ActivityData>
+          size="small"
+          columns={columns}
+          dataSource={activityData}
+          pagination={false}
+          style={{ width: 300 }}
+          rowKey={(record) => record.activity}
+        />
+
         {/* Data Table */}
         <Table
           size="small"
@@ -250,7 +305,7 @@ export default function ActivityHistoryPage() {
           columns={dynamicColumns}
           rowKey="personnelId"
           loading={isLoading}
-          scroll={{ x: "max-content", y: 600 }}
+          scroll={{ x: "max-content" }}
           pagination={false}
         />
       </div>
