@@ -19,13 +19,12 @@ import personnelActivityService from "../../services/personnelActivityService";
 import type { Personnel } from "../../@types/Personnel";
 import type { ActivityType } from "../../@types/ActivityType";
 import nameFormat from "../../utils/nameFormat";
-import { convertUtcToPhDateShort } from "../../utils/convertUtcToPhDateShort";
 import DebounceInput from "../../componets/DebounceInput";
 import { SearchOutlined } from "@ant-design/icons";
 import activityTypeService from "../../services/activityTypeService";
-import { formatDaysToYMD } from "../../utils/formatDaysToYMD";
 import ManualActivitySaveModal from "./ManualActivitySaveModal";
 import ActivityHistoryPage from "../leave-history/ActivityHistoryPage";
+import { formatDateRange } from "../../utils/formatDateRange";
 
 dayjs.extend(isBetween);
 
@@ -174,30 +173,23 @@ export default function ManualActivityIndex() {
       key: "title",
     },
     {
-      title: "Start Date",
+      title: "Date",
       dataIndex: "startDate",
       key: "startDate",
       align: "center",
       width: 130,
       sorter: (a, b) => dayjs(a.startDate).unix() - dayjs(b.startDate).unix(),
-      render: (date) => convertUtcToPhDateShort(date),
+      render: (_, record: PersonnelActivity) =>
+        formatDateRange(record.startDate, record.endDate),
     },
-    {
-      title: "End Date",
-      dataIndex: "endDate",
-      key: "endDate",
-      align: "center",
-      width: 130,
-      sorter: (a, b) => dayjs(a.endDate).unix() - dayjs(b.endDate).unix(),
-      render: (date) => convertUtcToPhDateShort(date),
-    },
+
     {
       title: "Duration",
       dataIndex: "days",
       key: "days",
       align: "center",
       width: 130,
-      render: (days: number) => formatDaysToYMD(days),
+      render: (days: number) => days,
     },
     {
       title: "Status",
@@ -313,7 +305,6 @@ export default function ManualActivityIndex() {
       </div>
 
       <Table
-        scroll={{ x: 1000 }}
         size="small"
         columns={columns}
         dataSource={
@@ -327,14 +318,7 @@ export default function ManualActivityIndex() {
         title={() => "History"}
       />
 
-      <ManualActivitySaveModal
-        form={form}
-        setIsModalVisible={setIsModalVisible}
-        selectedActivity={selectedActivity}
-        isModalVisible={isModalVisible}
-        onAfterSave={refetch}
-      />
-      <ActivityHistoryPage />
+      <ManualActivitySaveModal />
     </div>
   );
 }

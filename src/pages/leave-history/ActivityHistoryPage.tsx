@@ -3,7 +3,7 @@ import type { ColumnsType } from "antd/es/table";
 import { useQuery } from "@tanstack/react-query";
 import personelService from "../../services/personelService";
 import nameFormat from "../../utils/nameFormat";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import LeaveCreditModal from "./CreditsModal";
 import activityTypeService from "../../services/activityTypeService";
 import { formatDateRange } from "../../utils/formatDateRange";
@@ -15,13 +15,18 @@ import {
 import type { AllPersonnelLeaveDto } from "../../@types/nonTable/AllPersonnelLeaveDto";
 import type { ActivityData } from "../../@types/dashboardGraphs/ActivityData";
 import dashboardService from "../../services/dashboardService";
+import dayjs from "dayjs";
+import { usePrint } from "../../hooks/documents/usePrint";
 
 export default function ActivityHistoryPage() {
   const [selectedPersonnel, setSelectedPersonnel] =
     useState<AllPersonnelLeaveDto | null>(null);
   const [openLeaveCreditModal, setOpenLeaveCreditModal] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<number | "All">("All");
+  const [selectedYear, setSelectedYear] = useState<number | "All">(
+    dayjs().year(),
+  );
   const [searchText, setSearchText] = useState<string>("");
+  const [isDocumenting, setIsDocumenting] = useState<boolean>(false);
 
   // --- API Queries ---
   const { data: personnelLeaveData, isLoading: loadingData } = useQuery<
@@ -58,11 +63,11 @@ export default function ActivityHistoryPage() {
     personnelLeaveData.forEach((p) => {
       p.personnelActivities?.forEach((pa) => {
         if (pa.startDate) {
-          const year = new Date(pa.startDate).getFullYear();
+          const year = dayjs(pa.startDate).year();
           if (!isNaN(year)) yearsSet.add(year);
         }
         if (pa.endDate) {
-          const year = new Date(pa.endDate).getFullYear();
+          const year = dayjs(pa.endDate).year();
           if (!isNaN(year)) yearsSet.add(year);
         }
       });
@@ -78,7 +83,6 @@ export default function ActivityHistoryPage() {
   const renderDutyStatusBadge = (dutyStatus?: string | null) => {
     const normalizedStatus = dutyStatus?.trim();
 
-    // 1. Active / Present Status
     if (normalizedStatus === "Active") {
       return (
         <Tag
@@ -103,6 +107,7 @@ export default function ActivityHistoryPage() {
     );
   };
 
+  // --- Filtered Personnel Data ---
   const filteredPersonnels = useMemo(() => {
     if (!searchText.trim()) return personnelLeaveData;
     const lowerSearch = searchText.toLowerCase();
@@ -111,27 +116,45 @@ export default function ActivityHistoryPage() {
     );
   }, [personnelLeaveData, searchText]);
 
+  // --- Dynamic Columns Construction ---
   const dynamicColumns = useMemo(() => {
     const baseColumns: ColumnsType<AllPersonnelLeaveDto> = [
       {
         title: "Personnel",
         key: "personnel",
         fixed: "left",
+        width: 240,
         render: (_, record) => (
           <div className="flex flex-col gap-1.5 py-1">
             <span className="text-xs font-semibold text-gray-900 break-words">
               {nameFormat(record)}
             </span>
-
             <div>{renderDutyStatusBadge(record.dutyStatus)}</div>
           </div>
         ),
       },
     ];
 
-    // Map each activity type to an Ant Design Grouped Column layout
+    // 1. Filter out activity types that have no logged entries across ALL visible personnel rows
+    const activeActivityTypes = activityTypes.filter((type) => {
+      return filteredPersonnels.some((person) => {
+        const matchingLogs = (person.personnelActivities || []).filter((pa) => {
+          const matchesType =
+            String(pa.activityTypeId) === String(type.activityTypeId);
+          if (!matchesType) return false;
+          if (selectedYear === "All") return true;
+
+          const startYear = pa.startDate ? dayjs(pa.startDate).year() : null;
+          const endYear = pa.endDate ? dayjs(pa.endDate).year() : null;
+          return startYear === selectedYear || endYear === selectedYear;
+        });
+        return matchingLogs.length > 0;
+      });
+    });
+
+    // 2. Build grouped sub-columns using ONLY the active, filtered categories
     const activityColumns: ColumnsType<AllPersonnelLeaveDto> =
-      activityTypes.map((type) => ({
+      activeActivityTypes.map((type) => ({
         title: `${type.activityTypeName} (${type.maxCredits || 0})`,
         key: `group-${type.activityTypeId}`,
         align: "center",
@@ -144,16 +167,15 @@ export default function ActivityHistoryPage() {
               const filteredActivities = (
                 record.personnelActivities || []
               ).filter((pa) => {
-                const matchesType = pa.activityTypeId === type.activityTypeId;
+                const matchesType =
+                  String(pa.activityTypeId) === String(type.activityTypeId);
                 if (!matchesType) return false;
                 if (selectedYear === "All") return true;
 
                 const startYear = pa.startDate
-                  ? new Date(pa.startDate).getFullYear()
+                  ? dayjs(pa.startDate).year()
                   : null;
-                const endYear = pa.endDate
-                  ? new Date(pa.endDate).getFullYear()
-                  : null;
+                const endYear = pa.endDate ? dayjs(pa.endDate).year() : null;
                 return startYear === selectedYear || endYear === selectedYear;
               });
 
@@ -198,7 +220,8 @@ export default function ActivityHistoryPage() {
             align: "center",
             render: (_, record) => {
               const creditInfo = record.leaveCredits?.find(
-                (lc) => lc.activityTypeId === type.activityTypeId,
+                (lc) =>
+                  String(lc.activityTypeId) === String(type.activityTypeId),
               );
               const remainingCredits = creditInfo
                 ? creditInfo.remainingCredits
@@ -243,7 +266,16 @@ export default function ActivityHistoryPage() {
     ];
 
     return [...baseColumns, ...activityColumns, ...actionColumn];
-  }, [activityTypes, selectedYear]);
+  }, [activityTypes, filteredPersonnels, selectedYear]);
+
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  const { handlePrint } = usePrint({
+    ref,
+    orientation: "landscape",
+    onBeforePrint: async () => await setIsDocumenting(true),
+    onAfterPrint: async () => await setIsDocumenting(false),
+  });
 
   const isLoading = loadingData || loadingTypes;
 
@@ -262,6 +294,10 @@ export default function ActivityHistoryPage() {
             Activity & Credit Logs
           </span>
           <Space wrap size="middle">
+            <Button onClick={() => handlePrint()} loading={isDocumenting}>
+              Print
+            </Button>
+
             <Input
               placeholder="Search by name..."
               size="small"
@@ -287,27 +323,33 @@ export default function ActivityHistoryPage() {
           </Space>
         </div>
 
-        <Table<ActivityData>
-          size="small"
-          columns={columns}
-          dataSource={activityData}
-          pagination={false}
-          style={{ width: 300 }}
-          rowKey={(record) => record.activity}
-        />
+        <div ref={ref}>
+          <Table<ActivityData>
+            size="small"
+            columns={columns}
+            dataSource={activityData}
+            pagination={false}
+            style={{ width: 300 }}
+            rowKey={(record) => record.activity}
+          />
 
-        {/* Data Table */}
-        <Table
-          size="small"
-          bordered
-          sticky
-          dataSource={filteredPersonnels}
-          columns={dynamicColumns}
-          rowKey="personnelId"
-          loading={isLoading}
-          scroll={{ x: "max-content" }}
-          pagination={false}
-        />
+          <Table
+            size="small"
+            bordered
+            sticky
+            dataSource={filteredPersonnels}
+            columns={dynamicColumns.filter(
+              (x) => x.title != "Action" || !isDocumenting,
+            )}
+            rowKey="personnelId"
+            loading={isLoading}
+            scroll={{
+              x: !isDocumenting ? "max-content" : undefined,
+              y: !isDocumenting ? 600 : undefined,
+            }}
+            pagination={false}
+          />
+        </div>
       </div>
     </>
   );

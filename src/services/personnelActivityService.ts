@@ -5,25 +5,26 @@ import axiosInstance from "./_axiosInstance";
 const subdirectory: string = "/personnel-activity";
 
 export const personnelActivityService = {
-
-
-  getMyPendingApprovals: async (roleId: number): Promise<PersonnelActivity[]> => {
+  getMyPendingApprovals: async (
+    roleId: number,
+  ): Promise<PersonnelActivity[]> => {
     const response = await axiosInstance.get<PersonnelActivity[]>(
       subdirectory + "/pending-approvals",
-      { params: { roleId } }
+      { params: { roleId } },
     );
     return response.data;
   },
 
-
-  getPendingActivities: async (userId: number): Promise<PersonnelActivity[]> => {
+  getPendingActivities: async (
+    userId: number,
+  ): Promise<PersonnelActivity[]> => {
     const response = await axiosInstance.get<PersonnelActivity[]>(
       subdirectory + "/pending",
       {
         params: {
-          userId
-        }
-      }
+          userId,
+        },
+      },
     );
     return response.data;
   },
@@ -42,7 +43,7 @@ export const personnelActivityService = {
   },
 
   insertSchooling: async (
-    personnelActivity: PersonnelActivity
+    personnelActivity: PersonnelActivity,
   ): Promise<PersonnelActivity> => {
     const response = await axiosInstance.post<PersonnelActivity>(
       `${subdirectory}/schooling`,
@@ -52,18 +53,17 @@ export const personnelActivityService = {
   },
 
   insertManualLeave: async (
-    personnelActivity: PersonnelActivity
+    personnelActivity: PersonnelActivity,
   ): Promise<PersonnelActivity> => {
     const response = await axiosInstance.post<PersonnelActivity>(
-      `${subdirectory}/schooling`,
+      `${subdirectory}/manual-leave`,
       personnelActivity,
     );
     return response.data;
   },
 
-
   insertRestricted: async (
-    personnelActivity: PersonnelActivity
+    personnelActivity: PersonnelActivity,
   ): Promise<PersonnelActivity> => {
     const response = await axiosInstance.post<PersonnelActivity>(
       `${subdirectory}/restricted`,
@@ -73,15 +73,21 @@ export const personnelActivityService = {
   },
 
   checkOverlap: async (
-    personnelActivity: PersonnelActivity
-  ): Promise<AxiosResponse<{ hasOverlap: boolean; message: string; activity?: PersonnelActivity }>> => {
-    const response = await axiosInstance.post<{ hasOverlap: boolean; message: string; activity?: any }>(
-      `${subdirectory}/check-overlap`,
-      personnelActivity
-    );
+    personnelActivity: PersonnelActivity,
+  ): Promise<
+    AxiosResponse<{
+      hasOverlap: boolean;
+      message: string;
+      activity?: PersonnelActivity;
+    }>
+  > => {
+    const response = await axiosInstance.post<{
+      hasOverlap: boolean;
+      message: string;
+      activity?: any;
+    }>(`${subdirectory}/check-overlap`, personnelActivity);
     return response;
   },
-
 
   decline: async (
     personnelActivityId: number,

@@ -75,9 +75,15 @@ export const emptyPersonnel: Personnel = {
 };
 
 const PersonnelIndex: React.FC = () => {
+  const [isDocummenting, setIsDocumenting] = useState<boolean>(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
-  const { handlePrint } = usePrint({ ref, orientation: "landscape" });
+  const { handlePrint } = usePrint({
+    ref,
+    orientation: "landscape",
+    onBeforePrint: async () => await setIsDocumenting(true),
+    onAfterPrint: async () => await setIsDocumenting(false),
+  });
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(
     null,
   );
@@ -502,7 +508,11 @@ const PersonnelIndex: React.FC = () => {
           scroll={{ x: "max-content" }}
           pagination={false}
           size="small"
-          columns={columns}
+          columns={columns.filter(
+            (x) =>
+              !isDocummenting ||
+              (x.title !== "Actions" && x.title !== "Has Account"),
+          )}
           dataSource={currentData}
           rowKey="personnelId"
           loading={isFetching}
