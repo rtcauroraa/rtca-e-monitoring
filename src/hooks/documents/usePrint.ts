@@ -8,8 +8,8 @@ type UsePrintOptions = {
   onBeforePrint?: (() => Promise<void>) | undefined;
   onAfterPrint?: (() => Promise<void>) | undefined;
   delay?: number;
-  orientation?: PrintOrientation; 
-  width?:string
+  orientation?: PrintOrientation;
+  width?: string;
 };
 
 export function usePrint({
@@ -17,8 +17,8 @@ export function usePrint({
   onBeforePrint,
   onAfterPrint,
   delay = 500,
-  orientation = "portrait", 
-  width="100%"
+  orientation = "portrait",
+  width = "100%",
 }: UsePrintOptions) {
   const handlePrint = useReactToPrint({
     contentRef: ref,
@@ -33,8 +33,8 @@ export function usePrint({
     onAfterPrint,
     pageStyle: `
       @page {
-        size: A4 ${orientation}; 
-        margin: 11mm 5mm 11mm 5mm; 
+        size: ${orientation}; 
+        margin: 5mm 5mm 5mm 5mm; 
       }
       @media print {
         body {

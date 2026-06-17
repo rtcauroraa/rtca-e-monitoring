@@ -17,6 +17,7 @@ import type { ActivityData } from "../../@types/dashboardGraphs/ActivityData";
 import dashboardService from "../../services/dashboardService";
 import dayjs from "dayjs";
 import { usePrint } from "../../hooks/documents/usePrint";
+import getRandomColor from "../../utils/getRandomColor";
 
 export default function ActivityHistoryPage() {
   const [selectedPersonnel, setSelectedPersonnel] =
@@ -116,6 +117,25 @@ export default function ActivityHistoryPage() {
     );
   }, [personnelLeaveData, searchText]);
 
+  // --- Filter Out Active Activities Globally ---
+  const activeActivityTypes = useMemo(() => {
+    return activityTypes.filter((type) => {
+      return filteredPersonnels.some((person) => {
+        const matchingLogs = (person.personnelActivities || []).filter((pa) => {
+          const matchesType =
+            String(pa.activityTypeId) === String(type.activityTypeId);
+          if (!matchesType) return false;
+          if (selectedYear === "All") return true;
+
+          const startYear = pa.startDate ? dayjs(pa.startDate).year() : null;
+          const endYear = pa.endDate ? dayjs(pa.endDate).year() : null;
+          return startYear === selectedYear || endYear === selectedYear;
+        });
+        return matchingLogs.length > 0;
+      });
+    });
+  }, [activityTypes, filteredPersonnels, selectedYear]);
+
   // --- Dynamic Columns Construction ---
   const dynamicColumns = useMemo(() => {
     const baseColumns: ColumnsType<AllPersonnelLeaveDto> = [
@@ -135,113 +155,97 @@ export default function ActivityHistoryPage() {
       },
     ];
 
-    // 1. Filter out activity types that have no logged entries across ALL visible personnel rows
-    const activeActivityTypes = activityTypes.filter((type) => {
-      return filteredPersonnels.some((person) => {
-        const matchingLogs = (person.personnelActivities || []).filter((pa) => {
-          const matchesType =
-            String(pa.activityTypeId) === String(type.activityTypeId);
-          if (!matchesType) return false;
-          if (selectedYear === "All") return true;
-
-          const startYear = pa.startDate ? dayjs(pa.startDate).year() : null;
-          const endYear = pa.endDate ? dayjs(pa.endDate).year() : null;
-          return startYear === selectedYear || endYear === selectedYear;
-        });
-        return matchingLogs.length > 0;
-      });
-    });
-
-    // 2. Build grouped sub-columns using ONLY the active, filtered categories
     const activityColumns: ColumnsType<AllPersonnelLeaveDto> =
-      activeActivityTypes.map((type) => ({
-        title: `${type.activityTypeName} (${type.maxCredits || 0})`,
-        key: `group-${type.activityTypeId}`,
-        align: "center",
-        children: [
-          {
-            title: "Logs",
-            key: `logs-${type.activityTypeId}`,
-            width: 180,
-            render: (_, record) => {
-              const filteredActivities = (
-                record.personnelActivities || []
-              ).filter((pa) => {
-                const matchesType =
-                  String(pa.activityTypeId) === String(type.activityTypeId);
-                if (!matchesType) return false;
-                if (selectedYear === "All") return true;
+      activeActivityTypes.map((type) => {
+        return {
+          title: `${type.activityTypeName} (${type.maxCredits || 0})`,
+          key: `group-${type.activityTypeId}`,
+          align: "center",
+          children: [
+            {
+              title: "Logs",
+              key: `logs-${type.activityTypeId}`,
+              width: 180,
+              render: (_, record) => {
+                const filteredActivities = (
+                  record.personnelActivities || []
+                ).filter((pa) => {
+                  const matchesType =
+                    String(pa.activityTypeId) === String(type.activityTypeId);
+                  if (!matchesType) return false;
+                  if (selectedYear === "All") return true;
 
-                const startYear = pa.startDate
-                  ? dayjs(pa.startDate).year()
-                  : null;
-                const endYear = pa.endDate ? dayjs(pa.endDate).year() : null;
-                return startYear === selectedYear || endYear === selectedYear;
-              });
+                  const startYear = pa.startDate
+                    ? dayjs(pa.startDate).year()
+                    : null;
+                  const endYear = pa.endDate ? dayjs(pa.endDate).year() : null;
+                  return startYear === selectedYear || endYear === selectedYear;
+                });
 
-              if (filteredActivities.length === 0) {
+                if (filteredActivities.length === 0) {
+                  return (
+                    <span className="text-gray-500 text-xs block text-center font-medium">
+                      -
+                    </span>
+                  );
+                }
+
                 return (
-                  <span className="text-gray-400 text-xs block text-center">
-                    -
-                  </span>
-                );
-              }
-
-              return (
-                <div className="flex flex-col gap-1.5 max-h-[120px] overflow-y-auto pr-1">
-                  {filteredActivities.map((pa, idx) => (
-                    <div
-                      key={pa.personnelActivityId || idx}
-                      className="flex flex-col border-b border-gray-100 last:border-0 pb-1 last:pb-0"
-                    >
-                      {pa.title && (
-                        <span className="font-semibold text-gray-800 text-[11px] truncate">
-                          {pa.title}
-                        </span>
-                      )}
-                      <span className="text-[10px] text-gray-500 font-medium">
-                        {formatDateRange(pa.startDate, pa.endDate)}
-                        {pa.days && (
-                          <span className="text-gray-400 font-normal ml-1">
-                            ({pa.days}d)
+                  <div className="flex flex-col gap-1.5 max-h-[120px] overflow-y-auto pr-1">
+                    {filteredActivities.map((pa, idx) => (
+                      <div
+                        key={pa.personnelActivityId || idx}
+                        className="flex flex-col border-b border-black/10 last:border-0 pb-1 last:pb-0"
+                      >
+                        {pa.title && (
+                          <span className="font-bold text-gray-900 text-[11px] truncate">
+                            {pa.title}
                           </span>
                         )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              );
+                        <span className="text-[10px] text-gray-800 font-semibold">
+                          {formatDateRange(pa.startDate, pa.endDate)}
+                          {pa.days && (
+                            <span className="text-gray-700 font-medium ml-1">
+                              ({pa.days}d)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              },
             },
-          },
-          {
-            title: "Credits Left",
-            key: `credits-${type.activityTypeId}`,
-            width: 100,
-            align: "center",
-            render: (_, record) => {
-              const creditInfo = record.leaveCredits?.find(
-                (lc) =>
-                  String(lc.activityTypeId) === String(type.activityTypeId),
-              );
-              const remainingCredits = creditInfo
-                ? creditInfo.remainingCredits
-                : (type.maxCredits ?? 0);
+            {
+              title: "Credits Left",
+              key: `credits-${type.activityTypeId}`,
+              width: 100,
+              align: "center",
+              render: (_, record) => {
+                const creditInfo = record.leaveCredits?.find(
+                  (lc) =>
+                    String(lc.activityTypeId) === String(type.activityTypeId),
+                );
+                const remainingCredits = creditInfo
+                  ? creditInfo.remainingCredits
+                  : (type.maxCredits ?? 0);
 
-              return (
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-                    remainingCredits <= 0
-                      ? "bg-red-50 text-red-600 border-red-200"
-                      : "bg-green-50 text-green-600 border-green-200"
-                  }`}
-                >
-                  {remainingCredits}
-                </span>
-              );
+                return (
+                  <span
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                      remainingCredits <= 0
+                        ? "bg-red-200 text-red-800 border-red-400"
+                        : "bg-white/80 text-green-800 border-green-400"
+                    }`}
+                  >
+                    {remainingCredits}
+                  </span>
+                );
+              },
             },
-          },
-        ],
-      }));
+          ],
+        };
+      });
 
     const actionColumn: ColumnsType<AllPersonnelLeaveDto> = [
       {
@@ -266,7 +270,7 @@ export default function ActivityHistoryPage() {
     ];
 
     return [...baseColumns, ...activityColumns, ...actionColumn];
-  }, [activityTypes, filteredPersonnels, selectedYear]);
+  }, [activeActivityTypes]);
 
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -281,6 +285,16 @@ export default function ActivityHistoryPage() {
 
   return (
     <>
+      {/* 
+        Injecting a small style layer to clean up AntD's internal cell properties.
+        This forces fixed left/right columns to respect the row background color rule.
+      */}
+      <style>{`
+        .custom-row-colored td {
+          background-color: inherit !important;
+        }
+      `}</style>
+
       <LeaveCreditModal
         open={openLeaveCreditModal}
         onClose={() => setOpenLeaveCreditModal(false)}
@@ -324,30 +338,67 @@ export default function ActivityHistoryPage() {
         </div>
 
         <div ref={ref}>
+          {/* Summary Table */}
           <Table<ActivityData>
             size="small"
+            bordered
             columns={columns}
             dataSource={activityData}
             pagination={false}
             style={{ width: 300 }}
             rowKey={(record) => record.activity}
+            className="mb-4 text-gray-900 font-medium"
+            onRow={(record, index) => {
+              const isOnDuty =
+                record.activity?.trim().toLowerCase() === "on duty";
+
+              return {
+                className: "custom-row-colored",
+                style: {
+                  backgroundColor: isOnDuty ? "#ffffff" : getRandomColor(index),
+                },
+              };
+            }}
           />
 
+          {/* Master Personnel Leave Matrix */}
           <Table
             size="small"
             bordered
             sticky
             dataSource={filteredPersonnels}
             columns={dynamicColumns.filter(
-              (x) => x.title != "Action" || !isDocumenting,
+              (x) => x.title !== "Action" || !isDocumenting,
             )}
             rowKey="personnelId"
             loading={isLoading}
             scroll={{
               x: !isDocumenting ? "max-content" : undefined,
-              y: !isDocumenting ? 600 : undefined,
             }}
             pagination={false}
+            onRow={(record) => {
+              const dutyStatus = record.dutyStatus?.trim().toLowerCase();
+              const isOnDuty = dutyStatus === "active";
+
+              // Find index corresponding to the specific custom status matching the legend sequence
+              const statusColorIndex = activityData.findIndex(
+                (ad) => ad.activity?.trim().toLowerCase() === dutyStatus,
+              );
+
+              // Use legend color if matched, otherwise fall back to layout sequence zero helper
+              const targetBgColor = isOnDuty
+                ? "#ffffff"
+                : getRandomColor(
+                    statusColorIndex !== -1 ? statusColorIndex : 0,
+                  );
+
+              return {
+                className: "custom-row-colored",
+                style: {
+                  backgroundColor: targetBgColor,
+                },
+              };
+            }}
           />
         </div>
       </div>

@@ -23,8 +23,8 @@ import DebounceInput from "../../componets/DebounceInput";
 import { SearchOutlined } from "@ant-design/icons";
 import activityTypeService from "../../services/activityTypeService";
 import ManualActivitySaveModal from "./ManualActivitySaveModal";
-import ActivityHistoryPage from "../leave-history/ActivityHistoryPage";
 import { formatDateRange } from "../../utils/formatDateRange";
+import ActivityHistoryPage from "../leave-history/ActivityHistoryPage";
 
 dayjs.extend(isBetween);
 
@@ -317,8 +317,17 @@ export default function ManualActivityIndex() {
         style={{ marginTop: 16 }}
         title={() => "History"}
       />
+      <ActivityHistoryPage />
 
-      <ManualActivitySaveModal />
+      <ManualActivitySaveModal
+        form={form}
+        setIsModalVisible={setIsModalVisible}
+        selectedActivity={selectedActivity}
+        isModalVisible={isModalVisible}
+        onAfterSave={() => {
+          refetch();
+        }}
+      />
     </div>
   );
 }

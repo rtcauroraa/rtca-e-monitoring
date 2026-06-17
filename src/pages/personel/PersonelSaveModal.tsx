@@ -75,27 +75,28 @@ export default function PersonnelSaveModal({
     setIsSubmitting(true);
     try {
       const val = await form.validateFields();
-      const values:PersonnelForm = {...val,hasAccount:selectedPersonnel?.hasAccount}
-    
+      const values: PersonnelForm = {
+        ...val,
+        hasAccount: selectedPersonnel?.hasAccount,
+      };
+
       const formData = new FormData();
 
-     (Object.keys(values) as (keyof typeof values)[]).forEach((key) => {
-  const value = values[key];
+      (Object.keys(values) as (keyof typeof values)[]).forEach((key) => {
+        const value = values[key];
 
-  if (value === null || value === undefined) return;
+        if (value === null || value === undefined) return;
 
-  if (dayjs.isDayjs(value)) {
-    formData.append(key as string, value.format("YYYY-MM-DD"));
-  } else if (Array.isArray(value)) {
-    // ✅ Handle arrays by appending each item individually
-    value.forEach((item) => {
-      // Use "key" or `${key}[]` depending on what your backend expects
-      formData.append(key as string, String(item));
-    });
-  } else {
-    formData.append(key as string, String(value));
-  }
-});
+        if (dayjs.isDayjs(value)) {
+          formData.append(key as string, value.format("YYYY-MM-DD"));
+        } else if (Array.isArray(value)) {
+          value.forEach((item) => {
+            formData.append(key as string, String(item));
+          });
+        } else {
+          formData.append(key as string, String(value));
+        }
+      });
 
       // ✅ append file
       if (file) {
@@ -197,7 +198,7 @@ export default function PersonnelSaveModal({
               onChange={(value) => {
                 setCasing(
                   ranks?.find((r) => r.rankId == value)?.rankCategory?.casing ??
-                  "",
+                    "",
                 );
               }}
               options={ranks?.map((r) => ({
@@ -234,18 +235,15 @@ export default function PersonnelSaveModal({
           <Form.Item
             name="email"
             label="Email"
-          // rules={[
-          //   { required: true },
-          //   { type: "email", message: "Invalid email" },
-          // ]}
+            // rules={[
+            //   { required: true },
+            //   { type: "email", message: "Invalid email" },
+            // ]}
           >
             <Input />
           </Form.Item>
 
-          <Form.Item
-            name="departmentId"
-            label="Primary Designation"
-          >
+          <Form.Item name="departmentId" label="Primary Designation">
             <Select
               placeholder="Select primary department"
               allowClear
@@ -256,15 +254,12 @@ export default function PersonnelSaveModal({
             />
           </Form.Item>
 
-          <Form.Item
-            name="otherDepartmentIds"
-            label="Other Designations"
-          >
+          <Form.Item name="otherDepartmentIds" label="Other Designations">
             <Select
               mode="multiple"
               allowClear
               placeholder="Select all applicable departments"
-              style={{ width: '100%' }}
+              style={{ width: "100%" }}
               options={departments?.map((d) => ({
                 label: d.departmentName,
                 value: d.departmentId,
@@ -293,7 +288,7 @@ export default function PersonnelSaveModal({
           <Form.Item
             name="dateEnteredService"
             label="Date Entered Service"
-          // required
+            // required
           >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>
