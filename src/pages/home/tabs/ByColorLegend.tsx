@@ -1,27 +1,45 @@
-import React, { useMemo, useRef } from 'react';
-import { Table, Tag, Space, Typography, Card, Button, Badge } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { useQuery } from '@tanstack/react-query';
-import { FileExcelOutlined, FilePdfOutlined, PrinterOutlined } from '@ant-design/icons';
-import dashboardService from '../../../services/dashboardService';
-import nameFormat from '../../../utils/nameFormat';
+import React, { useMemo, useRef } from "react";
+import { Table, Tag, Space, Typography, Card, Button, Badge } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { useQuery } from "@tanstack/react-query";
+import {
+  FileExcelOutlined,
+  FilePdfOutlined,
+  PrinterOutlined,
+} from "@ant-design/icons";
+import dashboardService from "../../../services/dashboardService";
+import nameFormat from "../../../utils/nameFormat";
 
 // Third-Party Data Export Tools
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { usePrint } from '../../../hooks/documents/usePrint';
+import { usePrint } from "../../../hooks/documents/usePrint";
 
 const { Text } = Typography;
 
 // --- Strong Color Palette ---
 const getRandomColor = (index?: number) => {
   const colors = [
-    "#E11D48", "#008080", "#6D28D9", "#D97706",
-    "#4D7C0F", "#1E6091", "#C2410C", "#0891B2", "#059669", "#B45309", "#BE185D",
-    "#2563EB", "#4338CA", "#C026D3", "#15803D",
-    "#0284C7", "#7C3AED", "#DB2777"
+    "#E11D48",
+    "#008080",
+    "#6D28D9",
+    "#D97706",
+    "#4D7C0F",
+    "#1E6091",
+    "#C2410C",
+    "#0891B2",
+    "#059669",
+    "#B45309",
+    "#BE185D",
+    "#2563EB",
+    "#4338CA",
+    "#C026D3",
+    "#15803D",
+    "#0284C7",
+    "#7C3AED",
+    "#DB2777",
   ];
   if (index || index === 0) return colors[index % colors.length];
   return colors[Math.floor(Math.random() * colors.length)];
@@ -50,12 +68,11 @@ interface FlattenedPersonnel {
   rankName?: string | null;
   rankCode?: string | null;
   rankLevel?: number | null;
-  groupType?: 'Officer' | 'Non-Officer' | null;
+  groupType?: "Officer" | "Non-Officer" | null;
   currentActivity?: string | null;
 }
 
 export const ByColorLegend: React.FC = () => {
-
   const { data: personnelActivityData = [], isLoading } = useQuery({
     queryKey: ["personnelActivityData"],
     queryFn: async () => await dashboardService.getPersonnelByActivityType(),
@@ -65,7 +82,7 @@ export const ByColorLegend: React.FC = () => {
 
   const ref = useRef<HTMLDivElement | null>(null);
 
-  const { handlePrint } = usePrint({ ref, orientation: "landscape" });
+  const { handlePrint } = usePrint({ ref, orientation: "portrait" });
 
   // Computes color mapping AND aggregates real-time headcounts per activity
   const activityMetrics = useMemo(() => {
@@ -81,11 +98,11 @@ export const ByColorLegend: React.FC = () => {
         } else {
           let assignedColor = getRandomColor(index);
           if (normalizedKey === "RESTRICTED") {
-            assignedColor = '#E11D48';
+            assignedColor = "#E11D48";
           }
           metrics[normalizedKey] = {
             color: assignedColor,
-            count: personnelCount
+            count: personnelCount,
           };
         }
       }
@@ -104,12 +121,15 @@ export const ByColorLegend: React.FC = () => {
 
         const fullName = nameFormat(p);
 
-        let groupType: 'Officer' | 'Non-Officer' = p?.rank?.rankCategoryId === 1 ? 'Officer' : 'Non-Officer';
-        const priorityActivity = p?.personnelActivities?.find(a => a.isFullyApproved && a?.personnel?.rank?.rankCategory?.name);
+        let groupType: "Officer" | "Non-Officer" =
+          p?.rank?.rankCategoryId === 1 ? "Officer" : "Non-Officer";
+        const priorityActivity = p?.personnelActivities?.find(
+          (a) => a.isFullyApproved && a?.personnel?.rank?.rankCategory?.name,
+        );
 
         if (priorityActivity?.personnel?.rank?.rankCategory?.name) {
           const typeCheck = priorityActivity.personnel.rank.rankCategory.name;
-          if (typeCheck === 'Officer' || typeCheck === 'Non-Officer') {
+          if (typeCheck === "Officer" || typeCheck === "Non-Officer") {
             groupType = typeCheck;
           }
         }
@@ -126,7 +146,7 @@ export const ByColorLegend: React.FC = () => {
           currentActivity: group.activity,
         };
 
-        if (groupType === 'Officer') {
+        if (groupType === "Officer") {
           officers.push(data);
         } else {
           nonOfficers.push(data);
@@ -134,7 +154,10 @@ export const ByColorLegend: React.FC = () => {
       });
     });
 
-    const sortByRankThenSerialNumber = (a: FlattenedPersonnel, b: FlattenedPersonnel) => {
+    const sortByRankThenSerialNumber = (
+      a: FlattenedPersonnel,
+      b: FlattenedPersonnel,
+    ) => {
       const levelA = a?.rankLevel ?? 0;
       const levelB = b?.rankLevel ?? 0;
 
@@ -142,8 +165,8 @@ export const ByColorLegend: React.FC = () => {
         return levelA - levelB;
       }
 
-      const cleanA = (a?.serialNumber ?? "").replace(/\D/g, '');
-      const cleanB = (b?.serialNumber ?? "").replace(/\D/g, '');
+      const cleanA = (a?.serialNumber ?? "").replace(/\D/g, "");
+      const cleanB = (b?.serialNumber ?? "").replace(/\D/g, "");
 
       const numA = parseInt(cleanA, 10) || 0;
       const numB = parseInt(cleanB, 10) || 0;
@@ -153,35 +176,53 @@ export const ByColorLegend: React.FC = () => {
 
     return {
       Officers: officers.sort(sortByRankThenSerialNumber),
-      NonOfficers: nonOfficers.sort(sortByRankThenSerialNumber)
+      NonOfficers: nonOfficers.sort(sortByRankThenSerialNumber),
     };
   }, [personnelActivityData]);
 
-
   const handleExportExcel = () => {
     const workbook = XLSX.utils.book_new();
-    const mapToExcelData = (list: FlattenedPersonnel[]) => list.map((p, index) => ({
-      "Nr.": index + 1,
-      "Full Name": p.fullName ?? "N/A",
-      "Rank Level": p.rankLevel ?? 0,
-      "Serial Number": p.serialNumber ?? "N/A",
-      "Rank Designation": p.rankName ? `${p.rankName} (${p.rankCode})` : "N/A",
-      "Email Address": p.email ?? "N/A",
-      "Current Status Activity": p.currentActivity?.toUpperCase() ?? "N/A"
-    }));
+    const mapToExcelData = (list: FlattenedPersonnel[]) =>
+      list.map((p, index) => ({
+        "Nr.": index + 1,
+        "Full Name": p.fullName ?? "N/A",
+        "Rank Level": p.rankLevel ?? 0,
+        "Serial Number": p.serialNumber ?? "N/A",
+        "Rank Designation": p.rankName
+          ? `${p.rankName} (${p.rankCode})`
+          : "N/A",
+        "Email Address": p.email ?? "N/A",
+        "Current Status Activity": p.currentActivity?.toUpperCase() ?? "N/A",
+      }));
 
     if (processedGroups.Officers.length > 0) {
-      const officerSheet = XLSX.utils.json_to_sheet(mapToExcelData(processedGroups.Officers));
+      const officerSheet = XLSX.utils.json_to_sheet(
+        mapToExcelData(processedGroups.Officers),
+      );
       XLSX.utils.book_append_sheet(workbook, officerSheet, "Officers Division");
     }
     if (processedGroups.NonOfficers.length > 0) {
-      const nonOfficerSheet = XLSX.utils.json_to_sheet(mapToExcelData(processedGroups.NonOfficers));
-      XLSX.utils.book_append_sheet(workbook, nonOfficerSheet, "Non-Officers Division");
+      const nonOfficerSheet = XLSX.utils.json_to_sheet(
+        mapToExcelData(processedGroups.NonOfficers),
+      );
+      XLSX.utils.book_append_sheet(
+        workbook,
+        nonOfficerSheet,
+        "Non-Officers Division",
+      );
     }
 
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const fileBlob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-    saveAs(fileBlob, `Personnel_Ledger_Matrix_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const fileBlob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+    });
+    saveAs(
+      fileBlob,
+      `Personnel_Ledger_Matrix_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
   };
 
   const handleExportPdf = () => {
@@ -197,18 +238,23 @@ export const ByColorLegend: React.FC = () => {
     const pdfColumns = ["Nr.", "Full Name", "Status Activity"];
 
     // We keep a secondary lookup array aligned with our map index structure to find activity configurations in autoTable hooks
-    const mapToPdfRows = (list: FlattenedPersonnel[]) => list.map((p, index) => [
-      index + 1,
-      p.fullName ?? "N/A",
-      (p.currentActivity ?? "N/A").toUpperCase()
-    ]);
+    const mapToPdfRows = (list: FlattenedPersonnel[]) =>
+      list.map((p, index) => [
+        index + 1,
+        p.fullName ?? "N/A",
+        (p.currentActivity ?? "N/A").toUpperCase(),
+      ]);
 
     let finalY = 80;
 
     if (processedGroups.Officers.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
-      doc.text(`1. Officers Table (${processedGroups.Officers.length} Records)`, 40, finalY);
+      doc.text(
+        `1. Officers Table (${processedGroups.Officers.length} Records)`,
+        40,
+        finalY,
+      );
 
       autoTable(doc, {
         startY: finalY + 10,
@@ -219,13 +265,12 @@ export const ByColorLegend: React.FC = () => {
         theme: "grid",
 
         didParseCell: (data) => {
-          if (data.section === 'body') {
-
+          if (data.section === "body") {
             const rowIndex = data.row.index;
             const item = processedGroups.Officers[rowIndex];
             if (item?.currentActivity) {
               const actKey = item.currentActivity.toUpperCase();
-              if (actKey !== 'ON DUTY' && activityMetrics[actKey]) {
+              if (actKey !== "ON DUTY" && activityMetrics[actKey]) {
                 const hexColor = activityMetrics[actKey].color;
                 // Parse hex to an array config for jsPDF internal mapping
                 const rgb = hexToRgbArray(hexColor);
@@ -234,23 +279,30 @@ export const ByColorLegend: React.FC = () => {
                 data.cell.styles.fillColor = [
                   Math.round(rgb[0] + (255 - rgb[0]) * 0.55),
                   Math.round(rgb[1] + (255 - rgb[1]) * 0.55),
-                  Math.round(rgb[2] + (255 - rgb[2]) * 0.55)
+                  Math.round(rgb[2] + (255 - rgb[2]) * 0.55),
                 ];
                 data.cell.styles.textColor = [0, 0, 0]; // Keep dark font readability sharp
               }
             }
           }
-        }
+        },
       });
 
       finalY = (doc as any).lastAutoTable.finalY + 30;
     }
 
     if (processedGroups.NonOfficers.length > 0) {
-      if (finalY > 750) { doc.addPage(); finalY = 50; }
+      if (finalY > 750) {
+        doc.addPage();
+        finalY = 50;
+      }
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
-      doc.text(`2. Non-Officers Table (${processedGroups.NonOfficers.length} Records)`, 40, finalY);
+      doc.text(
+        `2. Non-Officers Table (${processedGroups.NonOfficers.length} Records)`,
+        40,
+        finalY,
+      );
 
       autoTable(doc, {
         startY: finalY + 10,
@@ -260,12 +312,12 @@ export const ByColorLegend: React.FC = () => {
         headStyles: { fillColor: [0, 128, 128], textColor: [255, 255, 255] },
         theme: "grid",
         didParseCell: (data) => {
-          if (data.section === 'body') {
+          if (data.section === "body") {
             const rowIndex = data.row.index;
             const item = processedGroups.NonOfficers[rowIndex];
             if (item?.currentActivity) {
               const actKey = item.currentActivity.toUpperCase();
-              if (actKey !== 'ON DUTY' && activityMetrics[actKey]) {
+              if (actKey !== "ON DUTY" && activityMetrics[actKey]) {
                 const hexColor = activityMetrics[actKey].color;
                 const rgb = hexToRgbArray(hexColor);
 
@@ -273,50 +325,70 @@ export const ByColorLegend: React.FC = () => {
                 data.cell.styles.fillColor = [
                   Math.round(rgb[0] + (255 - rgb[0]) * 0.55),
                   Math.round(rgb[1] + (255 - rgb[1]) * 0.55),
-                  Math.round(rgb[2] + (255 - rgb[2]) * 0.55)
+                  Math.round(rgb[2] + (255 - rgb[2]) * 0.55),
                 ];
                 data.cell.styles.textColor = [0, 0, 0];
               }
             }
           }
-        }
+        },
       });
     }
 
-    doc.save(`Personnel_Ledger_Matrix_${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(
+      `Personnel_Ledger_Matrix_${new Date().toISOString().slice(0, 10)}.pdf`,
+    );
   };
 
   const columns: ColumnsType<FlattenedPersonnel> = [
     {
-      title: '#',
-      key: 'NR',
+      title: "#",
+      key: "NR",
       width: 60,
-      render: (_, __, index) => <span style={{ color: '#000000', fontWeight: 600 }}>{index + 1}</span>,
+      render: (_, __, index) => (
+        <span style={{ color: "#000000", fontWeight: 600 }}>{index + 1}</span>
+      ),
     },
     {
-      title: 'Full Name',
-      dataIndex: 'fullName',
-      key: 'fullName',
+      title: "Full Name",
+      dataIndex: "fullName",
+      key: "fullName",
       render: (text, record) => (
-        <span style={{ color: '#000000', fontWeight: 600 }}>
+        <span style={{ color: "#000000", fontWeight: 600 }}>
           {text}
           {/* Append status text brackets directly on paper prints */}
-          <span className="print-only-activity-text" style={{ display: 'none', marginLeft: '8px', fontWeight: 'normal', color: '#000000' }}>
-            {` [${(record.currentActivity ?? '').toUpperCase()}]`}
+          <span
+            className="print-only-activity-text"
+            style={{
+              display: "none",
+              marginLeft: "8px",
+              fontWeight: "normal",
+              color: "#000000",
+            }}
+          >
+            {` [${(record.currentActivity ?? "").toUpperCase()}]`}
           </span>
         </span>
       ),
     },
     {
-      title: 'Status Activity',
-      dataIndex: 'currentActivity',
-      key: 'currentActivity',
-      className: 'hide-column-on-print',
+      title: "Status Activity",
+      dataIndex: "currentActivity",
+      key: "currentActivity",
+      className: "hide-column-on-print",
       render: (activity: string) => {
         if (!activity) return null;
-        const baseColor = activityMetrics[activity.toUpperCase()]?.color || '#cbd5e1';
+        const baseColor =
+          activityMetrics[activity.toUpperCase()]?.color || "#cbd5e1";
         return (
-          <Tag color={baseColor} style={{ fontWeight: '900', color: '#000000', border: '1px solid rgba(0,0,0,0.35)' }}>
+          <Tag
+            color={baseColor}
+            style={{
+              fontWeight: "900",
+              color: "#000000",
+              border: "1px solid rgba(0,0,0,0.35)",
+            }}
+          >
             {activity.toUpperCase()}
           </Tag>
         );
@@ -325,16 +397,18 @@ export const ByColorLegend: React.FC = () => {
   ];
 
   const getRowClassName = (record: FlattenedPersonnel) => {
-    if (!record?.currentActivity) return '';
-    const sanitizedActivityName = record.currentActivity.replace(/\s+/g, '-').toLowerCase();
+    if (!record?.currentActivity) return "";
+    const sanitizedActivityName = record.currentActivity
+      .replace(/\s+/g, "-")
+      .toLowerCase();
     return `row-activity-${sanitizedActivityName}`;
   };
 
   const dynamicStyles = useMemo(() => {
-    let stylesString = '';
+    let stylesString = "";
     Object.entries(activityMetrics).forEach(([activity, data]) => {
-      const className = activity.replace(/\s+/g, '-').toLowerCase();
-      if (className === 'on-duty') return;
+      const className = activity.replace(/\s+/g, "-").toLowerCase();
+      if (className === "on-duty") return;
 
       const bgNormal = hexToRgba(data.color, 0.45);
       const bgHover = hexToRgba(data.color, 0.65);
@@ -347,53 +421,111 @@ export const ByColorLegend: React.FC = () => {
           background-color: ${bgHover} !important;
         }
       `;
-    }); 
- 
+    });
+
     return <style>{stylesString}</style>;
   }, [activityMetrics]);
 
   return (
-    <div style={{ padding: '24px', background: '#cbd5e1', minHeight: '100vh' }}>
-
+    <div style={{ padding: "24px", background: "#cbd5e1", minHeight: "100vh" }}>
       {dynamicStyles}
 
       {/* --- HIDDEN IN PRINT: Activity Color Matrix Guide --- */}
-      <Card className="no-print-zone" size="small" style={{ marginBottom: '24px' }}>
-        <div className='flex justify-between'>
+      <Card
+        className="no-print-zone"
+        size="small"
+        style={{ marginBottom: "24px" }}
+      >
+        <div className="flex justify-between">
           <Space wrap size={[16, 16]}>
             {Object.entries(activityMetrics).map(([activity, data]) => (
-              <div key={activity} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: '#ffffff', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                <div style={{ width: '16px', height: '16px', backgroundColor: data.color, borderRadius: '4px', border: '1px solid rgba(0,0,0,0.2)' }} />
-                <Text strong style={{ fontSize: '13px', color: '#000000' }}>
+              <div
+                key={activity}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "4px 12px",
+                  background: "#ffffff",
+                  borderRadius: "4px",
+                  border: "1px solid #cbd5e1",
+                }}
+              >
+                <div
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    backgroundColor: data.color,
+                    borderRadius: "4px",
+                    border: "1px solid rgba(0,0,0,0.2)",
+                  }}
+                />
+                <Text strong style={{ fontSize: "13px", color: "#000000" }}>
                   {activity}
                 </Text>
                 <Badge
                   count={data.count}
-                  style={{ backgroundColor: '#f1f5f9', color: '#334155', fontWeight: 700, border: '1px solid #cbd5e1' }}
+                  style={{
+                    backgroundColor: "#f1f5f9",
+                    color: "#334155",
+                    fontWeight: 700,
+                    border: "1px solid #cbd5e1",
+                  }}
                 />
               </div>
             ))}
           </Space>
           <Space size="middle">
-            <Button type="primary" icon={<PrinterOutlined />} onClick={handlePrint} style={{ backgroundColor: '#1c5bb9', borderColor: '#1c5bb9', fontWeight: 600 }}>
+            <Button
+              type="primary"
+              icon={<PrinterOutlined />}
+              onClick={handlePrint}
+              style={{
+                backgroundColor: "#1c5bb9",
+                borderColor: "#1c5bb9",
+                fontWeight: 600,
+              }}
+            >
               Print
             </Button>
-            <Button type="primary" icon={<FileExcelOutlined />} onClick={handleExportExcel} style={{ backgroundColor: '#15803D', borderColor: '#15803D', fontWeight: 600 }}>
+            <Button
+              type="primary"
+              icon={<FileExcelOutlined />}
+              onClick={handleExportExcel}
+              style={{
+                backgroundColor: "#15803D",
+                borderColor: "#15803D",
+                fontWeight: 600,
+              }}
+            >
               Export Excel
             </Button>
-            <Button type="primary" icon={<FilePdfOutlined />} onClick={handleExportPdf} style={{ backgroundColor: '#B91C1C', borderColor: '#B91C1C', fontWeight: 600 }}>
+            <Button
+              type="primary"
+              icon={<FilePdfOutlined />}
+              onClick={handleExportPdf}
+              style={{
+                backgroundColor: "#B91C1C",
+                borderColor: "#B91C1C",
+                fontWeight: 600,
+              }}
+            >
               Export PDF
             </Button>
           </Space>
         </div>
-
       </Card>
 
-      <div ref={ref} >
-
+      <div ref={ref}>
         {/* --- Officers Dynamic Data Table --- */}
         <Table
-          title={() => <span style={{ fontWeight: 800, fontSize: '16px', color: '#000000' }}>Officers ({processedGroups.Officers.length})</span>}
+          title={() => (
+            <span
+              style={{ fontWeight: 800, fontSize: "16px", color: "#000000" }}
+            >
+              Officers ({processedGroups.Officers.length})
+            </span>
+          )}
           columns={columns}
           dataSource={processedGroups.Officers}
           pagination={false}
@@ -404,7 +536,13 @@ export const ByColorLegend: React.FC = () => {
 
         {/* --- Non-Officers Dynamic Data Table --- */}
         <Table
-          title={() => <span style={{ fontWeight: 800, fontSize: '16px', color: '#000000' }}>Non-Officers ({processedGroups.NonOfficers.length})</span>}
+          title={() => (
+            <span
+              style={{ fontWeight: 800, fontSize: "16px", color: "#000000" }}
+            >
+              Non-Officers ({processedGroups.NonOfficers.length})
+            </span>
+          )}
           columns={columns}
           dataSource={processedGroups.NonOfficers}
           pagination={false}
@@ -412,7 +550,6 @@ export const ByColorLegend: React.FC = () => {
           loading={isLoading}
           bordered
         />
-
       </div>
     </div>
   );
