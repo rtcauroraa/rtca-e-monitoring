@@ -8,6 +8,7 @@ import {
   Alert,
   Spin,
   type FormInstance,
+  type ModalProps,
 } from "antd";
 import dayService from "../../services/dayService";
 import DateRangeComponent from "../../componets/DateRangeComponent";
@@ -21,6 +22,7 @@ import activityTypeService from "../../services/activityTypeService";
 import { emptyValues } from "./PersonnelActivityIndex";
 import type { AxiosError } from "axios";
 import { formatDateToMilitary } from "../../utils/formatDateToMilitary";
+import type { ActivityType } from "../../@types/ActivityType";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -31,7 +33,9 @@ type SaveModalProps = {
   setIsModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   selectedActivity: PersonnelActivity | null;
   isModalVisible: boolean;
-  onAfterSave: () => void;
+  onAfterSave?: () => void;
+  modalProps: ModalProps;
+  activityTypes?: ActivityType[];
 };
 const STATUS_DESCRIPTIONS: Record<string, string> = {
   "Pending Approval": "is currently pending approval for another request",
@@ -49,6 +53,8 @@ export default function PersonnelActivitySaveModal({
   isModalVisible,
   setIsModalVisible,
   onAfterSave,
+  modalProps,
+  activityTypes,
 }: SaveModalProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
@@ -63,9 +69,10 @@ export default function PersonnelActivitySaveModal({
   const personnelId = Form.useWatch("personnelId", form);
 
   // 1. Fetch Activity Types
-  const { data: activityTypes } = useQuery({
-    queryKey: ["activityTypes"],
+  const { data: fetchedActivities } = useQuery({
+    queryKey: ["activityTypes", activityTypes],
     queryFn: async () => {
+      if (activityTypes) return activityTypes;
       const types = await activityTypeService.getAll();
       return types?.filter(
         (t) =>
@@ -78,8 +85,8 @@ export default function PersonnelActivitySaveModal({
 
   // 2. Identify if the selected type is Mandatory
   const selectedTypeObj = useMemo(
-    () => activityTypes.find((t) => t.activityTypeId === activityTypeId),
-    [activityTypes, activityTypeId],
+    () => fetchedActivities.find((t) => t.activityTypeId === activityTypeId),
+    [fetchedActivities, activityTypeId],
   );
 
   // 3. EFFECT: Call the API to compute days exactly like the backend
@@ -215,7 +222,7 @@ export default function PersonnelActivitySaveModal({
       }
 
       setIsModalVisible(false);
-      onAfterSave();
+      onAfterSave && onAfterSave();
     } catch (err) {
       console.log("Save failed:", err);
     } finally {
@@ -264,6 +271,7 @@ export default function PersonnelActivitySaveModal({
       }}
       destroyOnClose
       width={600}
+      {...modalProps}
     >
       <Form
         form={form}
@@ -292,7 +300,7 @@ export default function PersonnelActivitySaveModal({
           rules={[{ required: true, message: "Please select activity type" }]}
         >
           <Select placeholder="Select Activity Type" allowClear>
-            {activityTypes.map((a) => (
+            {fetchedActivities.map((a) => (
               <Option key={a.activityTypeId} value={a.activityTypeId}>
                 {a.activityTypeName}
               </Option>

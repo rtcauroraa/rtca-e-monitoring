@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import activityTypeService from "../../services/activityTypeService";
 import { emptyValues } from "./ManualActivityndex";
 import { formatDaysToYMD } from "../../utils/formatDaysToYMD";
+import PersonnelActivitySaveModal from "../personnel-activity/PersonnelActivitySaveModal";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -166,87 +167,99 @@ export default function ManualActivitySaveModal({
   const handleClose = () => setIsModalVisible(false);
 
   return (
-    <Modal
-      title={selectedActivity ? "Edit Activity" : "Add Activity"}
-      open={isModalVisible}
-      onOk={handleOk}
-      okText={selectedActivity ? "Update" : "Submit"}
-      onCancel={handleClose}
-      okButtonProps={{
-        loading: isSubmitting,
-        disabled: isCalculating || calculation.balanceAfter! < 0,
+    <PersonnelActivitySaveModal
+      form={form}
+      setIsModalVisible={setIsModalVisible}
+      selectedActivity={selectedActivity}
+      isModalVisible={isModalVisible}
+      modalProps={{
+        title: selectedActivity ? "Edit Activity" : "Add Activity",
+        onOk: handleOk,
+        onCancel: handleClose,
       }}
-      destroyOnClose
-      width={600}
-    >
-      <Form
-        form={form}
-        initialValues={selectedActivity || emptyValues}
-        layout="vertical"
-      >
-        <PersonnelSelectComponent name="personnelId" label="Personnel" />
+      activityTypes={activityTypes}
+    />
+    // <Modal
+    //   title={selectedActivity ? "Edit Activity" : "Add Activity"}
+    //   open={isModalVisible}
+    //   onOk={handleOk}
+    //   okText={selectedActivity ? "Update" : "Submit"}
+    //   onCancel={handleClose}
+    //   okButtonProps={{
+    //     loading: isSubmitting,
+    //     disabled: isCalculating || calculation.balanceAfter! < 0,
+    //   }}
+    //   destroyOnClose
+    //   width={600}
+    // >
+    //   <Form
+    //     form={form}
+    //     initialValues={selectedActivity || emptyValues}
+    //     layout="vertical"
+    //   >
+    //     <PersonnelSelectComponent name="personnelId" label="Personnel" />
 
-        <Form.Item
-          name="activityTypeId"
-          label="Activity"
-          rules={[{ required: true, message: "Please select activity type" }]}
-        >
-          <Select
-            placeholder="Select Activity Type"
-            allowClear
-            value={activityTypes?.[0]?.activityTypeId}
-          >
-            {activityTypes.map((a) => (
-              <Option key={a.activityTypeId} value={a.activityTypeId}>
-                {a.activityTypeName}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
-        <Form.Item name="title" label="Title">
-          <Input />
-        </Form.Item>
-        <DateRangeComponent form={form} />
+    //     <Form.Item
+    //       name="activityTypeId"
+    //       label="Activity"
+    //       rules={[{ required: true, message: "Please select activity type" }]}
+    //     >
+    //       <Select
+    //         placeholder="Select Activity Type"
+    //         allowClear
+    //         value={activityTypes?.[0]?.activityTypeId}
+    //       >
+    //         {activityTypes.map((a) => (
+    //           <Option key={a.activityTypeId} value={a.activityTypeId}>
+    //             {a.activityTypeName}
+    //           </Option>
+    //         ))}
+    //       </Select>
+    //     </Form.Item>
+    //     <Form.Item name="title" label="Title">
+    //       <Input />
+    //     </Form.Item>
+    //     <DateRangeComponent form={form} />
 
-        {/* 6. Display Server-Calculated Credits */}
-        {startDate && endDate && (
-          <div
-            style={{
-              marginBottom: 16,
-              padding: "16px",
-              background: "#f8fafc",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <Spin spinning={isCalculating}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: 4,
-                }}
-              >
-                <Text>Days Requested:</Text>
-                <Text strong>{formatDaysToYMD(serverDays)} </Text>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: 4,
-                }}
-              >
-                <Text>Remaining:</Text>
-                <Text strong>{formatDaysToYMD(calculation.balanceAfter)} </Text>
-              </div>
-            </Spin>
-          </div>
-        )}
-        <Form.Item name="remarks" label="Remarks">
-          <TextArea />
-        </Form.Item>
-      </Form>
-    </Modal>
+    //     {/* 6. Display Server-Calculated Credits */}
+    //     {startDate && endDate && (
+    //       <div
+    //         style={{
+    //           marginBottom: 16,
+    //           padding: "16px",
+    //           background: "#f8fafc",
+    //           borderRadius: "8px",
+    //           border: "1px solid #e2e8f0",
+    //         }}
+    //       >
+    //         <Spin spinning={isCalculating}>
+    //           <div
+    //             style={{
+    //               display: "flex",
+    //               justifyContent: "space-between",
+    //               marginBottom: 4,
+    //             }}
+    //           >
+    //             <Text>Days Requested:</Text>
+    //             <Text strong>{formatDaysToYMD(serverDays)} </Text>
+    //           </div>
+    //           <div
+    //             style={{
+    //               display: "flex",
+    //               justifyContent: "space-between",
+    //               marginBottom: 4,
+    //             }}
+    //           >
+    //             <Text>Remaining:</Text>
+    //             <Text strong>{formatDaysToYMD(calculation.balanceAfter)} </Text>
+    //           </div>
+    //         </Spin>
+    //       </div>
+    //     )}
+    //     <Form.Item name="remarks" label="Remarks">
+    //       <TextArea />
+    //     </Form.Item>
+    //   </Form>
+    // </Modal>
   );
 }

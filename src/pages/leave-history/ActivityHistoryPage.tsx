@@ -23,9 +23,7 @@ export default function ActivityHistoryPage() {
   const [selectedPersonnel, setSelectedPersonnel] =
     useState<AllPersonnelLeaveDto | null>(null);
   const [openLeaveCreditModal, setOpenLeaveCreditModal] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<number | "All">(
-    dayjs().year(),
-  );
+  const [selectedYear, setSelectedYear] = useState<number | "All">("All");
   const [searchText, setSearchText] = useState<string>("");
   const [isDocumenting, setIsDocumenting] = useState<boolean>(false);
 
@@ -217,9 +215,8 @@ export default function ActivityHistoryPage() {
               },
             },
             {
-              title: "Credits Left",
+              title: "",
               key: `credits-${type.activityTypeId}`,
-              width: 100,
               align: "center",
               render: (_, record) => {
                 const creditInfo = record.leaveCredits?.find(
@@ -321,7 +318,7 @@ export default function ActivityHistoryPage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-            <Space size="small">
+            <Space size="small" className="">
               <span className="text-xs text-gray-500 font-medium">
                 Filter Year:
               </span>
