@@ -6,7 +6,7 @@ import type { EnlistedPersonnelETE } from "../../@types/nonTable/EnlistedPersonn
 import nameFormat from "../../utils/nameFormat";
 import { formatDateToMilitary } from "../../utils/formatDateToMilitary";
 import { useState } from "react";
-import { SearchOutlined } from "@ant-design/icons"
+import { SearchOutlined } from "@ant-design/icons";
 
 // Excel
 import * as XLSX from "xlsx";
@@ -24,6 +24,7 @@ import WarningModal from "./WarningModal";
 import { formatDaysToYMD } from "../../utils/formatDaysToYMD";
 import EteExplanationIndex from "../ete-email-layout/EteExplanationIndex";
 import dayjs from "dayjs";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 // ---------------- STATUS TAG ----------------
 export const getStatusTag = (status?: string, daysLeft: number = 0) => {
@@ -80,6 +81,7 @@ export default function EtePage() {
   const [filteredData, setFilteredData] = useState<EnlistedPersonnelETE[]>([]);
   const [explainModal, setExplainModal] = useState<boolean>(false);
 
+  const { isMobile } = useResponsiveLayout();
   const {
     data = [],
     isFetching,
@@ -117,41 +119,64 @@ export default function EtePage() {
       align: "center",
       width: 60,
       render: (_, __, index) => index + 1,
-      fixed: 'left' // Good practice to keep index and name fixed
+      fixed: "left", // Good practice to keep index and name fixed
     },
     {
       title: "Name",
-      width: 250,
-      fixed: 'left',
+      width: isMobile ? 100 : 250,
+      fixed: "left",
       render: (_, record) => nameFormat(record),
       // --- SEARCH LOGIC ---
-      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      filterDropdown: ({
+        setSelectedKeys,
+        selectedKeys,
+        confirm,
+        clearFilters,
+      }) => (
         <div style={{ padding: 8 }}>
           <Input
             placeholder="Search Name"
             value={selectedKeys[0]}
-            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onChange={(e) =>
+              setSelectedKeys(e.target.value ? [e.target.value] : [])
+            }
             onPressEnter={() => confirm()}
-            style={{ marginBottom: 8, display: 'block' }}
+            style={{ marginBottom: 8, display: "block" }}
           />
           <Space>
-            <Button type="primary" onClick={() => confirm()} icon={<SearchOutlined />} size="small" style={{ width: 90 }}>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
               Search
             </Button>
-            <Button onClick={() => clearFilters && clearFilters()} size="small" style={{ width: 90 }}>
+            <Button
+              onClick={() => clearFilters && clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
               Reset
             </Button>
           </Space>
         </div>
       ),
-      filterIcon: (filtered: boolean) => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
-      onFilter: (value, record) => nameFormat(record).toLowerCase().includes((value as string).toLowerCase()),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
+      ),
+      onFilter: (value, record) =>
+        nameFormat(record)
+          .toLowerCase()
+          .includes((value as string).toLowerCase()),
     },
     {
       title: "DATE ENTERED SVC",
       align: "center",
       dataIndex: "dateEnteredService",
-      sorter: (a, b) => dayjs(a.dateEnteredService).unix() - dayjs(b.dateEnteredService).unix(),
+      sorter: (a, b) =>
+        dayjs(a.dateEnteredService).unix() - dayjs(b.dateEnteredService).unix(),
       render: (value) => formatDateToMilitary(value),
     },
     {
@@ -181,7 +206,6 @@ export default function EtePage() {
       width: 150,
       align: "center",
       render: (_, record) => {
-
         if (
           record?.emailCategory === "REQUEST EXPLANATION" &&
           record?.supportingDocument
@@ -415,7 +439,7 @@ export default function EtePage() {
       <Modal
         closable={{ "aria-label": "Custom Close Button" }}
         open={explainModal}
-        onOk={() => { }}
+        onOk={() => {}}
         okText="Submit"
         onCancel={() => {
           setExplainModal(false);
@@ -438,7 +462,7 @@ export default function EtePage() {
         setIsModalVisible={setEnlistModal}
         selectedRecord={selectedRecord}
         isModalVisible={enlistModal}
-        onAfterSave={() => { }}
+        onAfterSave={() => {}}
       />
 
       <RequestExplanationModal
@@ -491,7 +515,11 @@ export default function EtePage() {
       {/* TABLE */}
       <Table
         sticky
-        scroll={{ y: "calc(100vh - 250px)" }}
+        scroll={{
+          y: "calc(100vh - 280px)",
+          // On mobile, use max-content to make it scroll smoothly like a native mobile app card layout
+          x: isMobile ? "max-content" : 1100,
+        }}
         loading={isFetching}
         rowKey={(record) => record.personnelId ?? 0}
         columns={columns}

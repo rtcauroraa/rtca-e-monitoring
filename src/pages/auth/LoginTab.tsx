@@ -24,14 +24,15 @@ export default function LoginTab() {
     try {
       setLoading(true);
       const { user, token } = await authService.login(values);
-      console.log(user)
+
       setUser(user);
       localStorage.setItem("jwt_token", token ?? "");
       navigate(user?.role?.indexPath ?? "/");
       form.resetFields();
     } catch (error: any) {
       const errorMessage =
-        error?.response?.data?.message || "Invalid credentials. Please try again.";
+        error?.response?.data?.message ||
+        "Invalid credentials. Please try again.";
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -43,7 +44,7 @@ export default function LoginTab() {
       {/* --- Header Section --- */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center bg-blue-50 text-blue-600 rounded-2xl mb-4 p-3">
-          <LoginOutlined style={{ fontSize: '32px' }} />
+          <LoginOutlined style={{ fontSize: "32px" }} />
         </div>
         <Title level={2} style={{ marginBottom: 8 }}>
           Welcome Back
@@ -63,7 +64,11 @@ export default function LoginTab() {
       >
         <Form.Item
           name="usernameOrEmail"
-          label={<Text strong className="text-gray-600">Username or Email</Text>}
+          label={
+            <Text strong className="text-gray-600">
+              Username or Email
+            </Text>
+          }
           rules={[
             {
               required: true,
@@ -83,8 +88,9 @@ export default function LoginTab() {
           name="password"
           label={
             <div className="flex justify-between w-full items-center">
-              <Text strong className="text-gray-600">Password</Text>
-
+              <Text strong className="text-gray-600">
+                Password
+              </Text>
             </div>
           }
           rules={[{ required: true, message: "Password required" }]}
@@ -127,7 +133,10 @@ export default function LoginTab() {
       {/* ========================================================================= */}
       {/* LOCAL FORGOT PASSWORD MODAL CONTAINER                                    */}
       {/* ========================================================================= */}
-<ForgotPasswordModal open={isModalOpen} onClose={()=>setIsModalOpen(false)}/>
+      <ForgotPasswordModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

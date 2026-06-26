@@ -16,10 +16,10 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { usePrint } from "../../../hooks/documents/usePrint";
+import { useResponsiveLayout } from "../../../hooks/useResponsiveLayout"; // Imported your hook
 
 const { Text } = Typography;
 
-// --- Strong Color Palette ---
 const getRandomColor = (index?: number) => {
   const colors = [
     "#E11D48",
@@ -52,7 +52,6 @@ const hexToRgba = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-// Helper function to extract individual RGB components from HEX for jsPDF
 const hexToRgbArray = (hex: string): [number, number, number] => {
   const r = parseInt(hex.slice(1, 3), 16) || 0;
   const g = parseInt(hex.slice(3, 5), 16) || 0;
@@ -73,6 +72,8 @@ interface FlattenedPersonnel {
 }
 
 export const ByColorLegend: React.FC = () => {
+  const { isMobile } = useResponsiveLayout(); // Detect viewport scales dynamically
+
   const { data: personnelActivityData = [], isLoading } = useQuery({
     queryKey: ["personnelActivityData"],
     queryFn: async () => await dashboardService.getPersonnelByActivityType(),
@@ -81,13 +82,10 @@ export const ByColorLegend: React.FC = () => {
   });
 
   const ref = useRef<HTMLDivElement | null>(null);
-
   const { handlePrint } = usePrint({ ref, orientation: "portrait" });
 
-  // Computes color mapping AND aggregates real-time headcounts per activity
   const activityMetrics = useMemo(() => {
     const metrics: Record<string, { color: string; count: number }> = {};
-
     personnelActivityData?.forEach((group, index) => {
       if (group?.activity) {
         const normalizedKey = group.activity.toUpperCase();
@@ -120,9 +118,9 @@ export const ByColorLegend: React.FC = () => {
         if (!p) return;
 
         const fullName = nameFormat(p);
-
         let groupType: "Officer" | "Non-Officer" =
           p?.rank?.rankCategoryId === 1 ? "Officer" : "Non-Officer";
+
         const priorityActivity = p?.personnelActivities?.find(
           (a) => a.isFullyApproved && a?.personnel?.rank?.rankCategory?.name,
         );
@@ -160,17 +158,12 @@ export const ByColorLegend: React.FC = () => {
     ) => {
       const levelA = a?.rankLevel ?? 0;
       const levelB = b?.rankLevel ?? 0;
-
-      if (levelA !== levelB) {
-        return levelA - levelB;
-      }
+      if (levelA !== levelB) return levelA - levelB;
 
       const cleanA = (a?.serialNumber ?? "").replace(/\D/g, "");
       const cleanB = (b?.serialNumber ?? "").replace(/\D/g, "");
-
       const numA = parseInt(cleanA, 10) || 0;
       const numB = parseInt(cleanB, 10) || 0;
-
       return numA - numB;
     };
 
@@ -180,6 +173,7 @@ export const ByColorLegend: React.FC = () => {
     };
   }, [personnelActivityData]);
 
+  // Export handlers remain exactly as they were...
   const handleExportExcel = () => {
     const workbook = XLSX.utils.book_new();
     const mapToExcelData = (list: FlattenedPersonnel[]) =>
@@ -236,8 +230,6 @@ export const ByColorLegend: React.FC = () => {
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 40, 65);
 
     const pdfColumns = ["Nr.", "Full Name", "Status Activity"];
-
-    // We keep a secondary lookup array aligned with our map index structure to find activity configurations in autoTable hooks
     const mapToPdfRows = (list: FlattenedPersonnel[]) =>
       list.map((p, index) => [
         index + 1,
@@ -263,7 +255,6 @@ export const ByColorLegend: React.FC = () => {
         styles: { font: "helvetica", fontSize: 9 },
         headStyles: { fillColor: [30, 96, 145], textColor: [255, 255, 255] },
         theme: "grid",
-
         didParseCell: (data) => {
           if (data.section === "body") {
             const rowIndex = data.row.index;
@@ -272,22 +263,18 @@ export const ByColorLegend: React.FC = () => {
               const actKey = item.currentActivity.toUpperCase();
               if (actKey !== "ON DUTY" && activityMetrics[actKey]) {
                 const hexColor = activityMetrics[actKey].color;
-                // Parse hex to an array config for jsPDF internal mapping
                 const rgb = hexToRgbArray(hexColor);
-
-                // Set light background (simulating the 0.45 opacity filter used on web table layout)
                 data.cell.styles.fillColor = [
                   Math.round(rgb[0] + (255 - rgb[0]) * 0.55),
                   Math.round(rgb[1] + (255 - rgb[1]) * 0.55),
                   Math.round(rgb[2] + (255 - rgb[2]) * 0.55),
                 ];
-                data.cell.styles.textColor = [0, 0, 0]; // Keep dark font readability sharp
+                data.cell.styles.textColor = [0, 0, 0];
               }
             }
           }
         },
       });
-
       finalY = (doc as any).lastAutoTable.finalY + 30;
     }
 
@@ -320,8 +307,6 @@ export const ByColorLegend: React.FC = () => {
               if (actKey !== "ON DUTY" && activityMetrics[actKey]) {
                 const hexColor = activityMetrics[actKey].color;
                 const rgb = hexToRgbArray(hexColor);
-
-                // Mix background colors with white base for elegant report rendering
                 data.cell.styles.fillColor = [
                   Math.round(rgb[0] + (255 - rgb[0]) * 0.55),
                   Math.round(rgb[1] + (255 - rgb[1]) * 0.55),
@@ -334,7 +319,6 @@ export const ByColorLegend: React.FC = () => {
         },
       });
     }
-
     doc.save(
       `Personnel_Ledger_Matrix_${new Date().toISOString().slice(0, 10)}.pdf`,
     );
@@ -344,7 +328,7 @@ export const ByColorLegend: React.FC = () => {
     {
       title: "#",
       key: "NR",
-      width: 60,
+      width: 50,
       render: (_, __, index) => (
         <span style={{ color: "#000000", fontWeight: 600 }}>{index + 1}</span>
       ),
@@ -356,7 +340,6 @@ export const ByColorLegend: React.FC = () => {
       render: (text, record) => (
         <span style={{ color: "#000000", fontWeight: 600 }}>
           {text}
-          {/* Append status text brackets directly on paper prints */}
           <span
             className="print-only-activity-text"
             style={{
@@ -376,6 +359,7 @@ export const ByColorLegend: React.FC = () => {
       dataIndex: "currentActivity",
       key: "currentActivity",
       className: "hide-column-on-print",
+      width: isMobile ? 130 : undefined, // Explicit bounds on tiny screens
       render: (activity: string) => {
         if (!activity) return null;
         const baseColor =
@@ -387,6 +371,7 @@ export const ByColorLegend: React.FC = () => {
               fontWeight: "900",
               color: "#000000",
               border: "1px solid rgba(0,0,0,0.35)",
+              marginRight: 0,
             }}
           >
             {activity.toUpperCase()}
@@ -398,10 +383,7 @@ export const ByColorLegend: React.FC = () => {
 
   const getRowClassName = (record: FlattenedPersonnel) => {
     if (!record?.currentActivity) return "";
-    const sanitizedActivityName = record.currentActivity
-      .replace(/\s+/g, "-")
-      .toLowerCase();
-    return `row-activity-${sanitizedActivityName}`;
+    return `row-activity-${record.currentActivity.replace(/\s+/g, "-").toLowerCase()}`;
   };
 
   const dynamicStyles = useMemo(() => {
@@ -414,38 +396,40 @@ export const ByColorLegend: React.FC = () => {
       const bgHover = hexToRgba(data.color, 0.65);
 
       stylesString += `
-        .row-activity-${className} td {
-          background-color: ${bgNormal} !important;
-        }
-        .row-activity-${className}:hover td {
-          background-color: ${bgHover} !important;
-        }
+        .row-activity-${className} td { background-color: ${bgNormal} !important; }
+        .row-activity-${className}:hover td { background-color: ${bgHover} !important; }
       `;
     });
-
     return <style>{stylesString}</style>;
   }, [activityMetrics]);
 
   return (
-    <div style={{ padding: "24px", background: "#cbd5e1", minHeight: "100vh" }}>
+    <div
+      style={{
+        padding: isMobile ? "12px" : "24px",
+        background: "#cbd5e1",
+        minHeight: "100vh",
+      }}
+    >
       {dynamicStyles}
 
-      {/* --- HIDDEN IN PRINT: Activity Color Matrix Guide --- */}
       <Card
         className="no-print-zone"
         size="small"
-        style={{ marginBottom: "24px" }}
+        style={{ marginBottom: "20px" }}
       >
-        <div className="flex justify-between">
-          <Space wrap size={[16, 16]}>
+        {/* Tailwind structural changes for responsive grid/flex layout shifts */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
+          {/* Badge Legend Container */}
+          <div className="flex flex-wrap gap-2">
             {Object.entries(activityMetrics).map(([activity, data]) => (
               <div
                 key={activity}
                 style={{
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
-                  gap: "8px",
-                  padding: "4px 12px",
+                  gap: "6px",
+                  padding: "4px 8px",
                   background: "#ffffff",
                   borderRadius: "4px",
                   border: "1px solid #cbd5e1",
@@ -453,14 +437,14 @@ export const ByColorLegend: React.FC = () => {
               >
                 <div
                   style={{
-                    width: "16px",
-                    height: "16px",
+                    width: "12px",
+                    height: "12px",
                     backgroundColor: data.color,
-                    borderRadius: "4px",
+                    borderRadius: "3px",
                     border: "1px solid rgba(0,0,0,0.2)",
                   }}
                 />
-                <Text strong style={{ fontSize: "13px", color: "#000000" }}>
+                <Text strong style={{ fontSize: "12px", color: "#000000" }}>
                   {activity}
                 </Text>
                 <Badge
@@ -468,18 +452,22 @@ export const ByColorLegend: React.FC = () => {
                   style={{
                     backgroundColor: "#f1f5f9",
                     color: "#334155",
+                    fontSize: "11px",
                     fontWeight: 700,
                     border: "1px solid #cbd5e1",
                   }}
                 />
               </div>
             ))}
-          </Space>
-          <Space size="middle">
+          </div>
+
+          {/* Action Buttons Container */}
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button
               type="primary"
               icon={<PrinterOutlined />}
               onClick={handlePrint}
+              className="flex-1 lg:flex-none"
               style={{
                 backgroundColor: "#1c5bb9",
                 borderColor: "#1c5bb9",
@@ -492,36 +480,39 @@ export const ByColorLegend: React.FC = () => {
               type="primary"
               icon={<FileExcelOutlined />}
               onClick={handleExportExcel}
+              className="flex-1 lg:flex-none"
               style={{
                 backgroundColor: "#15803D",
                 borderColor: "#15803D",
                 fontWeight: 600,
               }}
             >
-              Export Excel
+              Excel
             </Button>
             <Button
               type="primary"
               icon={<FilePdfOutlined />}
               onClick={handleExportPdf}
+              className="flex-1 lg:flex-none"
               style={{
                 backgroundColor: "#B91C1C",
                 borderColor: "#B91C1C",
                 fontWeight: 600,
               }}
             >
-              Export PDF
+              PDF
             </Button>
-          </Space>
+          </div>
         </div>
       </Card>
 
-      <div ref={ref}>
-        {/* --- Officers Dynamic Data Table --- */}
+      {/* Main Table Document Canvas Wrapper */}
+      <div ref={ref} className="flex flex-col gap-6">
+        {/* Officers Table */}
         <Table
           title={() => (
             <span
-              style={{ fontWeight: 800, fontSize: "16px", color: "#000000" }}
+              style={{ fontWeight: 800, fontSize: "15px", color: "#000000" }}
             >
               Officers ({processedGroups.Officers.length})
             </span>
@@ -531,14 +522,16 @@ export const ByColorLegend: React.FC = () => {
           pagination={false}
           rowClassName={getRowClassName}
           loading={isLoading}
+          scroll={{ x: isMobile ? 400 : undefined }} // Enables elastic side-scroll on small views
+          size={"small"}
           bordered
         />
 
-        {/* --- Non-Officers Dynamic Data Table --- */}
+        {/* Non-Officers Table */}
         <Table
           title={() => (
             <span
-              style={{ fontWeight: 800, fontSize: "16px", color: "#000000" }}
+              style={{ fontWeight: 800, fontSize: "15px", color: "#000000" }}
             >
               Non-Officers ({processedGroups.NonOfficers.length})
             </span>
@@ -548,6 +541,8 @@ export const ByColorLegend: React.FC = () => {
           pagination={false}
           rowClassName={getRowClassName}
           loading={isLoading}
+          scroll={{ x: isMobile ? 400 : undefined }} // Enables elastic side-scroll on small views
+          size="small"
           bordered
         />
       </div>

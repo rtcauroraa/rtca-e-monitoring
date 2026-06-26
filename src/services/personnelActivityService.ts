@@ -16,7 +16,7 @@ export const personnelActivityService = {
   },
 
   getPendingActivities: async (
-    userId: number,
+    userId?: number,
   ): Promise<PersonnelActivity[]> => {
     const response = await axiosInstance.get<PersonnelActivity[]>(
       subdirectory + "/pending",

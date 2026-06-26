@@ -17,6 +17,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Personnel } from "../../@types/Personnel";
 import nameFormat from "../../utils/nameFormat";
+import { ApprovalStageDisplay } from "../../componets/ApprovalStageDisplay";
 
 type PersonnelActivitiesTableProps = {
   selectedPersonnel?: Personnel | null;
@@ -118,11 +119,28 @@ export default function PersonnelActivitiesTable({
     },
     { title: "Day/s", dataIndex: "days", key: "days" },
     { title: "Remarks", dataIndex: "remarks", key: "remarks", ellipsis: true },
+
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (status) => <StatusTag status={status} />,
+      render: (status, record) => {
+        if (!record.isFullyApproved)
+          return (
+            <>
+              <StatusTag status={status} />
+
+              <ApprovalStageDisplay
+                status={status}
+                currentStage={record.approvalProccess?.currentStage}
+                isOfficer={
+                  record.personnel?.rank?.rankCategory?.name === "Officer"
+                }
+              />
+            </>
+          );
+        return <StatusTag status={status} />;
+      },
     },
   ];
 
@@ -169,6 +187,7 @@ export default function PersonnelActivitiesTable({
           )}
         </div>
       )}
+      size="small"
       rowKey="personnelActivityId"
       columns={activityColumns}
       dataSource={personnelActivities || []}

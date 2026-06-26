@@ -15,8 +15,14 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ActivityChartViewContent from "./ActivityChartViewContent";
+import getRandomColor from "../../../utils/getRandomColor";
 
-export default function ActivityChart() {
+type ActivityChartProps = {
+  showChart?: boolean;
+};
+export default function ActivityChart({
+  showChart = true,
+}: ActivityChartProps) {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -178,7 +184,8 @@ export default function ActivityChart() {
         </div>
       }
     >
-      <Bar {...config} />
+      {showChart && <Bar {...config} />}
+
       <Table<ActivityData>
         size="small"
         columns={columns}
@@ -186,6 +193,16 @@ export default function ActivityChart() {
         pagination={false}
         rowKey={(record) => record.activity}
         style={{ marginTop: 20 }}
+        onRow={(record, index) => {
+          const isOnDuty = record.activity?.trim().toLowerCase() === "on duty";
+
+          return {
+            className: "custom-row-colored",
+            style: {
+              backgroundColor: isOnDuty ? "#ffffff" : getRandomColor(index),
+            },
+          };
+        }}
       />
 
       <Modal

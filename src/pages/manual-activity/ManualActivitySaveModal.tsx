@@ -1,30 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Form,
-  Input,
-  Modal,
-  Select,
-  Typography,
-  Spin,
-  type FormInstance,
-} from "antd";
+import { Form, type FormInstance } from "antd";
 // ... (other imports)
 import dayService from "../../services/dayService"; // Import the new service
-import DateRangeComponent from "../../componets/DateRangeComponent";
-import PersonnelSelectComponent from "../../componets/PersonnelSelectComponent";
 import personnelActivityService from "../../services/personnelActivityService";
 import dayjs from "dayjs";
 import type { PersonnelActivity } from "../../@types/PersonnelActivity";
-import personelService from "../../services/personelService";
 import { useQuery } from "@tanstack/react-query";
 import activityTypeService from "../../services/activityTypeService";
-import { emptyValues } from "./ManualActivityndex";
-import { formatDaysToYMD } from "../../utils/formatDaysToYMD";
 import PersonnelActivitySaveModal from "../personnel-activity/PersonnelActivitySaveModal";
-
-const { Text } = Typography;
-const { TextArea } = Input;
-const { Option } = Select;
 
 type SaveModalProps = {
   form: FormInstance<PersonnelActivity>;
@@ -47,7 +30,6 @@ export default function ManualActivitySaveModal({
   const startDate = Form.useWatch("startDate", form);
   const endDate = Form.useWatch("endDate", form);
   const activityTypeId = Form.useWatch("activityTypeId", form);
-  const personnelId = Form.useWatch("personnelId", form);
 
   // 1. Fetch Activity Types
   const { data: activityTypes } = useQuery({
@@ -97,43 +79,6 @@ export default function ManualActivitySaveModal({
     fetchDays();
   }, [startDate, endDate, selectedTypeObj]);
 
-  // 4. Fetch Credits
-  const { data: creditsData } = useQuery({
-    queryKey: ["personnelCredits", personnelId, activityTypeId, startDate],
-    queryFn: () =>
-      personelService.getPersonnelCredits(
-        personnelId,
-        dayjs().year(),
-        activityTypeId,
-        startDate,
-      ),
-    enabled: !!personnelId && !!activityTypeId,
-  });
-
-  // 5. Final Calculation for Display
-  const calculation = useMemo(() => {
-    const currentCredit = creditsData?.find(
-      (c) => c.activityTypeId === activityTypeId,
-    );
-    let remaining =
-      (currentCredit?.remainingCredits ?? 0) +
-      (currentCredit?.usedCredits ?? 0);
-
-    // // Refund logic for editing
-    // if (
-    //   selectedActivity &&
-    //   selectedActivity.personnelActivityId &&
-    //   selectedActivity.activityTypeId === activityTypeId
-    // ) {
-    //   remaining += selectedActivity.days ?? 0;
-    // }
-    return {
-      daysPicked: serverDays,
-      balanceAfter: remaining - serverDays,
-      totalAvailable: remaining,
-    };
-  }, [serverDays, creditsData, activityTypeId, selectedActivity]);
-
   const handleOk = async () => {
     try {
       setIsSubmitting(true);
@@ -176,90 +121,9 @@ export default function ManualActivitySaveModal({
         title: selectedActivity ? "Edit Activity" : "Add Activity",
         onOk: handleOk,
         onCancel: handleClose,
+        okButtonProps: { loading: isCalculating || isSubmitting },
       }}
       activityTypes={activityTypes}
     />
-    // <Modal
-    //   title={selectedActivity ? "Edit Activity" : "Add Activity"}
-    //   open={isModalVisible}
-    //   onOk={handleOk}
-    //   okText={selectedActivity ? "Update" : "Submit"}
-    //   onCancel={handleClose}
-    //   okButtonProps={{
-    //     loading: isSubmitting,
-    //     disabled: isCalculating || calculation.balanceAfter! < 0,
-    //   }}
-    //   destroyOnClose
-    //   width={600}
-    // >
-    //   <Form
-    //     form={form}
-    //     initialValues={selectedActivity || emptyValues}
-    //     layout="vertical"
-    //   >
-    //     <PersonnelSelectComponent name="personnelId" label="Personnel" />
-
-    //     <Form.Item
-    //       name="activityTypeId"
-    //       label="Activity"
-    //       rules={[{ required: true, message: "Please select activity type" }]}
-    //     >
-    //       <Select
-    //         placeholder="Select Activity Type"
-    //         allowClear
-    //         value={activityTypes?.[0]?.activityTypeId}
-    //       >
-    //         {activityTypes.map((a) => (
-    //           <Option key={a.activityTypeId} value={a.activityTypeId}>
-    //             {a.activityTypeName}
-    //           </Option>
-    //         ))}
-    //       </Select>
-    //     </Form.Item>
-    //     <Form.Item name="title" label="Title">
-    //       <Input />
-    //     </Form.Item>
-    //     <DateRangeComponent form={form} />
-
-    //     {/* 6. Display Server-Calculated Credits */}
-    //     {startDate && endDate && (
-    //       <div
-    //         style={{
-    //           marginBottom: 16,
-    //           padding: "16px",
-    //           background: "#f8fafc",
-    //           borderRadius: "8px",
-    //           border: "1px solid #e2e8f0",
-    //         }}
-    //       >
-    //         <Spin spinning={isCalculating}>
-    //           <div
-    //             style={{
-    //               display: "flex",
-    //               justifyContent: "space-between",
-    //               marginBottom: 4,
-    //             }}
-    //           >
-    //             <Text>Days Requested:</Text>
-    //             <Text strong>{formatDaysToYMD(serverDays)} </Text>
-    //           </div>
-    //           <div
-    //             style={{
-    //               display: "flex",
-    //               justifyContent: "space-between",
-    //               marginBottom: 4,
-    //             }}
-    //           >
-    //             <Text>Remaining:</Text>
-    //             <Text strong>{formatDaysToYMD(calculation.balanceAfter)} </Text>
-    //           </div>
-    //         </Spin>
-    //       </div>
-    //     )}
-    //     <Form.Item name="remarks" label="Remarks">
-    //       <TextArea />
-    //     </Form.Item>
-    //   </Form>
-    // </Modal>
   );
 }

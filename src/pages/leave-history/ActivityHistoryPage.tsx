@@ -13,11 +13,12 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import type { AllPersonnelLeaveDto } from "../../@types/nonTable/AllPersonnelLeaveDto";
-import type { ActivityData } from "../../@types/dashboardGraphs/ActivityData";
 import dashboardService from "../../services/dashboardService";
 import dayjs from "dayjs";
 import { usePrint } from "../../hooks/documents/usePrint";
 import getRandomColor from "../../utils/getRandomColor";
+import ActivityChart from "../statistic/charts/ActivityChart";
+import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 
 export default function ActivityHistoryPage() {
   const [selectedPersonnel, setSelectedPersonnel] =
@@ -27,6 +28,7 @@ export default function ActivityHistoryPage() {
   const [searchText, setSearchText] = useState<string>("");
   const [isDocumenting, setIsDocumenting] = useState<boolean>(false);
 
+  const { isMobile } = useResponsiveLayout();
   // --- API Queries ---
   const { data: personnelLeaveData, isLoading: loadingData } = useQuery<
     AllPersonnelLeaveDto[]
@@ -50,11 +52,6 @@ export default function ActivityHistoryPage() {
     queryFn: async () => await activityTypeService.getAll(),
     initialData: [],
   });
-
-  const columns = [
-    { title: "Activity", dataIndex: "activity", key: "activity" },
-    { title: "Personnel", dataIndex: "personnel", key: "personnel" },
-  ];
 
   // --- Extract Unique Years ---
   const yearOptions = useMemo(() => {
@@ -141,7 +138,7 @@ export default function ActivityHistoryPage() {
         title: "Personnel",
         key: "personnel",
         fixed: "left",
-        width: 240,
+        width: isMobile ? 100 : 240,
         render: (_, record) => (
           <div className="flex flex-col gap-1.5 py-1">
             <span className="text-xs font-semibold text-gray-900 break-words">
@@ -168,6 +165,7 @@ export default function ActivityHistoryPage() {
                 const filteredActivities = (
                   record.personnelActivities || []
                 ).filter((pa) => {
+                  if (!pa.isFullyApproved) return;
                   const matchesType =
                     String(pa.activityTypeId) === String(type.activityTypeId);
                   if (!matchesType) return false;
@@ -248,8 +246,8 @@ export default function ActivityHistoryPage() {
       {
         title: "Action",
         key: "action",
-        fixed: "right",
-        width: 100,
+        fixed: isMobile ? false : "right",
+        width: 50,
         align: "center",
         render: (_, record) => (
           <Button
@@ -300,63 +298,43 @@ export default function ActivityHistoryPage() {
 
       <div className="flex flex-col gap-4 bg-white rounded-lg border border-gray-200 shadow-sm p-4">
         {/* Filter Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
-          <span className="font-semibold text-gray-700 text-sm">
-            Activity & Credit Logs
-          </span>
-          <Space wrap size="middle">
-            <Button onClick={() => handlePrint()} loading={isDocumenting}>
-              Print
-            </Button>
-
-            <Input
-              placeholder="Search by name..."
-              size="small"
-              className="w-48"
-              allowClear
-              prefix={<SearchOutlined className="text-gray-400" />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-            />
-            <Space size="small" className="">
-              <span className="text-xs text-gray-500 font-medium">
-                Filter Year:
-              </span>
-              <Select
-                className="w-32"
-                size="small"
-                value={selectedYear}
-                options={yearOptions}
-                onChange={(value) => setSelectedYear(value)}
-                loading={loadingData}
-              />
-            </Space>
-          </Space>
-        </div>
 
         <div ref={ref}>
-          {/* Summary Table */}
-          <Table<ActivityData>
-            size="small"
-            bordered
-            columns={columns}
-            dataSource={activityData}
-            pagination={false}
-            style={{ width: 300 }}
-            rowKey={(record) => record.activity}
-            className="mb-4 text-gray-900 font-medium"
-            onRow={(record, index) => {
-              const isOnDuty =
-                record.activity?.trim().toLowerCase() === "on duty";
+          <ActivityChart showChart={false} />
 
-              return {
-                className: "custom-row-colored",
-                style: {
-                  backgroundColor: isOnDuty ? "#ffffff" : getRandomColor(index),
-                },
-              };
-            }}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+            <span className="font-semibold text-gray-700 text-sm">
+              Activity & Credit Logs
+            </span>
+            <Space wrap size="middle">
+              <Button onClick={() => handlePrint()} loading={isDocumenting}>
+                Print
+              </Button>
+
+              <Input
+                placeholder="Search by name..."
+                size="small"
+                className="w-48"
+                allowClear
+                prefix={<SearchOutlined className="text-gray-400" />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+              <Space size="small" className="">
+                <span className="text-xs text-gray-500 font-medium">
+                  Filter Year:
+                </span>
+                <Select
+                  className="w-32"
+                  size="small"
+                  value={selectedYear}
+                  options={yearOptions}
+                  onChange={(value) => setSelectedYear(value)}
+                  loading={loadingData}
+                />
+              </Space>
+            </Space>
+          </div>
 
           {/* Master Personnel Leave Matrix */}
           <Table

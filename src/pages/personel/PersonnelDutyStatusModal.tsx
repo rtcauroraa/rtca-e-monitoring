@@ -95,7 +95,6 @@ const PersonnelDutyStatusModal: React.FC<PersonnelStatusDutyModalProps> = ({
   };
 
   const handleSelect = (val: any) => {
-    console.log(val);
     if (val == "Schooling") {
       openSchoolingModal();
       return;

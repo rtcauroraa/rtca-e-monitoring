@@ -13,8 +13,7 @@ const { Header } = Layout;
 
 export default function HeaderLayout() {
   const { setCollapsed, collapsed } = useSidebarContext();
-  const { user,setUser } = useAuth(); // Assuming your auth context provides a logout function
-
+  const { user, setUser } = useAuth(); // Assuming your auth context provides a logout function
 
   const menuItems: MenuProps["items"] = [
     {
@@ -23,8 +22,8 @@ export default function HeaderLayout() {
       icon: <LogoutOutlined />,
       danger: true,
       onClick: () => {
-        setUser(null)
-        localStorage.clear()
+        setUser(null);
+        localStorage.clear();
       },
     },
   ];
@@ -39,14 +38,13 @@ export default function HeaderLayout() {
         justifyContent: "space-between",
       }}
     >
-
       <div style={{ display: "flex", alignItems: "center" }}>
         <Button
           type="text"
           icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           onClick={() => setCollapsed(!collapsed)}
           style={{
-            fontSize: "16px",
+            fontSize: "14px",
             width: 64,
             height: 64,
           }}
@@ -57,9 +55,9 @@ export default function HeaderLayout() {
       </div>
 
       {/* Right side: Clickable Profile Dropdown */}
-      <Dropdown 
-        menu={{ items: menuItems }} 
-        trigger={["click"]} 
+      <Dropdown
+        menu={{ items: menuItems }}
+        trigger={["click"]}
         placement="bottomRight"
       >
         <div className="cursor-pointer flex items-center justify-center transition-opacity hover:opacity-80">
@@ -67,9 +65,9 @@ export default function HeaderLayout() {
             size={48} // Approximately h-12/w-12 matching your structural look
             src={imageUtility.getProfile(user?.personnel?.profile)}
             icon={<UserOutlined />} // Fallback icon if no profile image exists
-            style={{ 
-              border: "2px solid white", 
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)" 
+            style={{
+              border: "2px solid white",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           />
         </div>

@@ -1,5 +1,6 @@
 import { Select, Form } from "antd";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react"; // Added useEffect
 import personelService from "../services/personelService";
 import type { Personnel } from "../@types/Personnel";
 import nameFormat from "../utils/nameFormat";
@@ -10,36 +11,52 @@ export type PersonnelSelectProps = {
   name: string;
   label: string;
   required?: boolean;
-  // Added onChange prop
+  defaultValue?: any;
   onChange?: (value: number | null, option: any) => void;
+  className?: string;
 };
 
 export default function PersonnelSelectComponent({
   name,
   label,
   required = true,
-  onChange, // Destructure here
+  onChange,
+  defaultValue,
+  className,
 }: PersonnelSelectProps) {
-  const { data: personnelList = [],isFetching } = useQuery({
+  // Get the form instance from the context so we can update it dynamically
+  const form = Form.useFormInstance();
+
+  const { data: personnelList = [], isFetching } = useQuery({
     queryKey: ["personnelList"],
     queryFn: async () => await personelService.getAllOnly(),
   });
+
+  // Dynamically update the form field when defaultValue finishes loading asynchronously
+  useEffect(() => {
+    if (form && defaultValue !== undefined) {
+      form.setFieldsValue({ [name]: defaultValue });
+    }
+  }, [defaultValue, name, form]);
 
   return (
     <Form.Item
       name={name}
       label={label}
+      initialValue={defaultValue} // Still kept as a fallback
       rules={
         required ? [{ required: true, message: `Please select ${label}` }] : []
       }
+      className={className}
     >
       <Select
         loading={isFetching}
         showSearch
+        // REMOVED: defaultValue={1} is completely gone now!
         placeholder={`Select ${label}`}
         optionFilterProp="children"
         allowClear
-        onChange={onChange} // Pass it to the Select component
+        onChange={onChange}
         filterOption={(input, option) =>
           (option?.children?.toString() ?? "")
             .toLowerCase()

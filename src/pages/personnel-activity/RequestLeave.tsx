@@ -20,9 +20,10 @@ import type { Personnel } from "../../@types/Personnel";
 import type { ActivityType } from "../../@types/ActivityType";
 import nameFormat from "../../utils/nameFormat";
 import { convertUtcToPhDateShort } from "../../utils/convertUtcToPhDateShort";
-import DebounceInput from "../../componets/DebounceInput";
 import { SearchOutlined } from "@ant-design/icons";
 import activityTypeService from "../../services/activityTypeService";
+import { useAuth } from "../../context/UserContext";
+import ApprovalHistoryTable from "./ApprovalHistoryTable";
 
 dayjs.extend(isBetween);
 
@@ -40,19 +41,24 @@ export const emptyValues: PersonnelActivity = {
   remarks: null,
 };
 
+type ModalType = "View" | "Approval";
+
 const RequestLeave: React.FC = () => {
   const [selectedActivity, setSelectedActivity] =
     useState<PersonnelActivity | null>(null);
+  const [modalType, setModalType] = useState<ModalType>("Approval");
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [filteredData, setFilteredData] = useState<PersonnelActivity[]>([]);
   const [selectedStatus, _] = useState<string>("");
+
+  const { user } = useAuth();
   const {
     data: activities,
     refetch,
     isFetching,
   } = useQuery({
     queryKey: ["personnelActivities", selectedStatus],
-    queryFn: async () => await personnelActivityService.getAll(),
+    queryFn: async () =>
+      await personnelActivityService.getAll({ personnelId: user?.personnelId }),
     initialData: [],
   });
 
@@ -64,7 +70,14 @@ const RequestLeave: React.FC = () => {
 
   const [form] = Form.useForm();
 
+  const openViewModal = (activity: PersonnelActivity) => {
+    setModalType("View");
+    setSelectedActivity(activity);
+    setIsModalVisible(true);
+  };
+
   const openModal = (activity?: PersonnelActivity) => {
+    setModalType("Approval");
     if (activity) {
       form.setFieldsValue({
         ...activity,
@@ -197,7 +210,6 @@ const RequestLeave: React.FC = () => {
       key: "days",
       align: "center",
       width: 130,
-
     },
     {
       title: "Status",
@@ -257,14 +269,17 @@ const RequestLeave: React.FC = () => {
         <Space>
           {record.status === "Pending Approval" && (
             <>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => openModal(record)}
-                style={{ padding: 0 }}
-              >
-                Edit
-              </Button>
+              {(record.approvalProccess?.currentStage ?? 1) < 2 && (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => openModal(record)}
+                  style={{ padding: 0 }}
+                >
+                  Edit
+                </Button>
+              )}
+
               <Popconfirm
                 title="Suspend this activity?"
                 onConfirm={() => handleSuspend(record)}
@@ -301,7 +316,7 @@ const RequestLeave: React.FC = () => {
         loading={isFetching}
         style={{ marginTop: 16 }}
       />
-      <div className="flex justify-end">
+      {/* <div className="flex justify-end">
         <DebounceInput
           placeholder="Search Name..."
           style={{ width: 250 }}
@@ -321,8 +336,8 @@ const RequestLeave: React.FC = () => {
             setFilteredData(result);
           }}
         />
-      </div>
-
+      </div> */}
+      {/* 
       <Table
         scroll={{ x: 1000 }}
         size="small"
@@ -336,13 +351,22 @@ const RequestLeave: React.FC = () => {
         loading={isFetching}
         style={{ marginTop: 16 }}
         title={() => "History"}
+      /> */}
+      <ApprovalHistoryTable
+        viewOnly={true}
+        isModalVisible={modalType == "View" && isModalVisible}
+        selectedActivity={selectedActivity}
+        setIsModalVisible={setIsModalVisible}
+        personnelActivities={activities}
+        onAfterAction={() => refetch()}
+        openModal={openViewModal}
       />
 
       <PersonnelActivitySaveModal
         form={form}
         setIsModalVisible={setIsModalVisible}
         selectedActivity={selectedActivity}
-        isModalVisible={isModalVisible}
+        isModalVisible={modalType == "Approval" && isModalVisible}
         onAfterSave={refetch}
       />
     </div>

@@ -12,7 +12,7 @@ import {
 } from "antd";
 import dayService from "../../services/dayService";
 import DateRangeComponent from "../../componets/DateRangeComponent";
-import PersonnelSelectComponent from "../../componets/PersonnelSelectComponent";
+// import PersonnelSelectComponent from "../../componets/PersonnelSelectComponent";
 import personnelActivityService from "../../services/personnelActivityService";
 import dayjs from "dayjs";
 import type { PersonnelActivity } from "../../@types/PersonnelActivity";
@@ -23,6 +23,8 @@ import { emptyValues } from "./PersonnelActivityIndex";
 import type { AxiosError } from "axios";
 import { formatDateToMilitary } from "../../utils/formatDateToMilitary";
 import type { ActivityType } from "../../@types/ActivityType";
+import { useAuth } from "../../context/UserContext";
+import PersonnelSelectComponent from "../../componets/PersonnelSelectComponent";
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -34,7 +36,7 @@ type SaveModalProps = {
   selectedActivity: PersonnelActivity | null;
   isModalVisible: boolean;
   onAfterSave?: () => void;
-  modalProps: ModalProps;
+  modalProps?: ModalProps;
   activityTypes?: ActivityType[];
 };
 const STATUS_DESCRIPTIONS: Record<string, string> = {
@@ -63,6 +65,7 @@ export default function PersonnelActivitySaveModal({
     PersonnelActivity | null | undefined
   >(null);
 
+  const { user } = useAuth();
   const startDate = Form.useWatch("startDate", form);
   const endDate = Form.useWatch("endDate", form);
   const activityTypeId = Form.useWatch("activityTypeId", form);
@@ -162,10 +165,12 @@ export default function PersonnelActivitySaveModal({
     // Grab the current input states silently (without showing red UI required errors)
     const values = form.getFieldsValue();
 
-    if (values.personnelId && values.startDate && values.endDate) {
+    let selectedPersonnelId = user?.personnelId ?? values.personnelId;
+    if (selectedPersonnelId && values.startDate && values.endDate) {
       try {
         const payload: PersonnelActivity = {
           ...values,
+          personnelId: selectedPersonnelId,
           endDate: dayjs(values.endDate)?.format("YYYY-MM-DD"),
           startDate: dayjs(values.startDate)?.format("YYYY-MM-DD"),
           personnelActivityId:
@@ -205,6 +210,7 @@ export default function PersonnelActivitySaveModal({
 
       const payload: PersonnelActivity = {
         ...values,
+        personnelId: user?.personnelId,
         status: "Pending Approval",
         endDate: dayjs(values.endDate)?.format("YYYY-MM-DD"),
         startDate: dayjs(values.startDate)?.format("YYYY-MM-DD"),
@@ -288,11 +294,14 @@ export default function PersonnelActivitySaveModal({
           }
         }}
       >
-        <PersonnelSelectComponent
-          name="personnelId"
-          label="Personnel"
-          onChange={() => handleOverlap()}
-        />
+        <div style={{ display: user?.personnelId ? "none" : "block" }}>
+          <PersonnelSelectComponent
+            defaultValue={user?.personnelId}
+            name="personnelId"
+            label="Personnel"
+            onChange={() => handleOverlap()}
+          />
+        </div>
 
         <Form.Item
           name="activityTypeId"
